@@ -92,6 +92,8 @@ class LoginByPhone(APIView):
             return Response(data)
 
         redis_code = cache.get(phone)
+        print(redis_code)
+        print(phone)
         if code == redis_code:
             try:
                 user = BasicsUserInfo.objects.get(phone=phone)
@@ -167,12 +169,12 @@ class UpdateUser(APIView):
         avatarUrl = userInfo.get("avatarUrl")
         openid = userInfo.get("openid")
 
-        data = {"status": True, }
+        data = {"status": False, }
         try:
             user = UserInfo.objects.get(openid=openid)
             # print("basics_info", user.basics_info.id)
             if user.basics_info:
-                data["status"] = False
+                data["status"] = True
                 user = BasicsUserInfo.objects.get(id=user.basics_info.id)
                 res = model_to_dict(user)
                 data["data"] = res
@@ -237,13 +239,22 @@ class UpdateUserInfo(APIView):
 
         user_obasics_info = UserInfo.objects.get(openid=openid)
         status = 0
+        # if not user_obasics_info.basics_info:
+        #     data["code"] = -1
+        #     print("data", data)
+        #     return Response(data)
         if is_admin == 1 | is_admin == 2:
             status = 1
+        print("userInfo", userInfo)
+        user = BasicsUserInfo.objects.create(is_admin=is_admin, name=name, id_number=id_number, native=native,
+                                             address=address, phone=phone, email=email, gender=gender,
+                                             status=status, ownership=ownership)
         try:
 
             user = BasicsUserInfo.objects.create(is_admin=is_admin, name=name, id_number=id_number, native=native,
                                                  address=address, phone=phone, email=email, gender=gender,
                                                  status=status, ownership=ownership)
+
             user_obasics_info.basics_info = user
             user_obasics_info.save()
         except:

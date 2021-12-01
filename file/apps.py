@@ -1,7 +1,6 @@
 from django.apps import AppConfig
 
 
-class ApiConfig(AppConfig):
+class FileConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'api'
-    verbose_name = "管理"
+    name = 'file'
