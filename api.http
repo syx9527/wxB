@@ -1,0 +1,28 @@
+POST http://127.0.0.1:8000/api/update_user_info/
+Content-Type: application/json
+
+{
+  "name": "4121",
+  "id_number": "530103199407092111",
+  "phone": "18314415670",
+  "email": "4223@qq.com",
+  "address": "421",
+  "gender": 1,
+  "native": "120101",
+  "is_admin": "2",
+  "openid": "123456",
+  "ownership": "1",
+  "car": [
+    {
+      "carNo": "123456",
+      "type": "4444",
+      "color": "222"
+    },
+    {
+      "carNo": "4213",
+      "type": "212",
+      "color": "421"
+    }
+  ]
+}
+
