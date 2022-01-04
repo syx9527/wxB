@@ -74,5 +74,8 @@ admin.site.register(Entry2ExitDeclaration)
 admin.site.register(AuditLog)
 admin.site.register(TrafficRecord)
 
+
+admin.site.register(ForeignWorkers)
+
 admin.site.site_header = '微信小程序后台管理'
 admin.site.site_title = '微信小程序后台管理'

@@ -12,6 +12,7 @@ urlpatterns = [
     path("update_user_info/", UpdateUserInfo.as_view(), name="update_user_info"),
     path("get_audit_list/", AuditList.as_view(), name="get_audit_list"),
     path("get_community_list/", GetCommunityList.as_view(), name="get_community_list"),
+    path("foreign_workers_registration/", ForeignWorkersRegistration.as_view(), name="get_community_list"),
 
     path("get_audit_log/", AuditLog.as_view(), name="get_audit_log"),
 

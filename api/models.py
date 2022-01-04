@@ -38,12 +38,14 @@ class Community2LigaturesImgs(models.Model):
     """
     社区/哨卡图片
     """
-    img = models.ImageField(upload_to='img/community&ligatures/', verbose_name='图片地址')
-    single = models.CharField(max_length=256, null=True, blank=True, verbose_name='图片名称')
+    img = models.ImageField(upload_to='community&ligatures/', verbose_name='图片地址')
+
     name = models.ForeignKey(verbose_name="所属社区", to="Community2LigaturesInfo", on_delete=models.CASCADE)
 
+    # single = models.CharField(max_length=256, null=True, blank=True, verbose_name='图片名称', default=name.name)
+
     def __str__(self):
-        return str(self.single)
+        return str(self.name.name)
 
     class Meta:
         verbose_name = verbose_name_plural = "社区/哨卡图片"
@@ -212,7 +214,7 @@ class SupportingImgs(models.Model):
     """
     证明材料
     """
-    img = models.ImageField(upload_to='img/supporting_materials/', verbose_name='图片地址')
+    img = models.ImageField(upload_to='supporting_materials/', verbose_name='图片地址')
     single = models.CharField(max_length=256, null=True, blank=True, verbose_name='图片名称')
 
     def __str__(self):
@@ -269,13 +271,45 @@ class TrafficRecord(models.Model):
     person_name = models.ManyToManyField(to="BasicsUserInfo", )
     address_names = models.ManyToManyField(to="Community2LigaturesInfo")  # 建立多对多关系，将卡点或者社区信息绑定至通行记录中
     data_time = models.DateTimeField(auto_now=True, verbose_name="记录时间")
-    trajectory_diagram = models.ImageField(verbose_name="轨迹图", upload_to="img/trajectory_diagram/")
+    trajectory_diagram = models.ImageField(verbose_name="轨迹图", upload_to="trajectory_diagram/")
 
     # def __str__(self):
     #     return self.person_name
 
     class Meta:
         verbose_name = verbose_name_plural = "通行记录"
+
+
+class ForeignWorkers(models.Model):
+    """
+    外来人员基本信息
+    """
+    STATUS = (
+
+        (0, "待审核"),
+        (1, "审核通过"),
+        (2, "审核失败"),
+    )
+    GENDER = (
+        (1, "男"),
+        (0, "女"),
+    )
+
+    name = models.CharField(verbose_name="姓名", max_length=12, null=False, blank=False, default="")
+    gender = models.IntegerField(verbose_name="性别", choices=GENDER, null=False, blank=True, default=1)
+    id_number = models.CharField(verbose_name="身份证号码", max_length=18, null=False, blank=True, default="", unique=True)
+    phone = models.CharField(verbose_name="手机号码", max_length=11, default="", null=True, blank=True, unique=True)
+    status = models.IntegerField(verbose_name="审核状态", choices=STATUS, default=0)
+    healthy_code = models.ImageField(verbose_name="健康码", upload_to='foreign_workers/', )
+    journey_car = models.ImageField(verbose_name="行程卡", upload_to='foreign_workers/', )
+    cov_report = models.ImageField(verbose_name="核酸检测报告", upload_to='foreign_workers/', )
+    by_user = models.ForeignKey(verbose_name="发起人", to="BasicsUserInfo", on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name = verbose_name_plural = "外来人员登记"
+
+    def __str__(self):
+        return self.name
 
 
 class Areas(models.Model):

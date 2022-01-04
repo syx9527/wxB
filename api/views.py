@@ -277,7 +277,7 @@ class UpdateUserInfo(APIView):
                 try:
                     c = Car.objects.create(carNo=_.get('carNo'), type=_.get('type'), color=_.get('color'))
                 except:
-                    c=Car.objects.get(carNo=_.get('carNo'))
+                    c = Car.objects.get(carNo=_.get('carNo'))
                 c.user.add(user)
 
         data["status"] = True
@@ -611,4 +611,26 @@ class LoginView(APIView):
             'token': user_info.token,
             'email': email
         }
+        return Response(data)
+
+
+class ForeignWorkersRegistration(APIView):
+    """
+    发起外来人员登记
+    """
+
+    def post(self, request, *args, **kwargs):
+        prams = request.data
+        myfile = request.FILES
+        openid = prams.get("openid")
+        name = prams.get("name")
+        gender = prams.get("gender")
+        phone = prams.get("phone")
+
+        healthy_code = myfile.get("healthy_code")
+        journey_car = myfile.get("journey_car")
+        cov_report = myfile.get("cov_report")
+
+        print(prams)
+        data = {"status": False, "data": []}
         return Response(data)
