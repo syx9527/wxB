@@ -40,6 +40,7 @@ class Community2LigaturesImgs(models.Model):
     """
     img = models.ImageField(upload_to='img/community&ligatures/', verbose_name='图片地址')
     single = models.CharField(max_length=256, null=True, blank=True, verbose_name='图片名称')
+    name = models.ForeignKey(verbose_name="所属社区", to="Community2LigaturesInfo", on_delete=models.CASCADE)
 
     def __str__(self):
         return str(self.single)
@@ -69,7 +70,9 @@ class Community2LigaturesInfo(models.Model):
     category = models.IntegerField(verbose_name="类别", choices=CATEGORY, )
     address = models.CharField(verbose_name="地址", max_length=256, null=False, blank=False, default="")
     control_strategy = models.IntegerField(verbose_name="管控策略", choices=CONTROL_STRATEGY_STATUS, default=3)
-    photos = models.ManyToManyField(Community2LigaturesImgs, related_name='imgs', verbose_name='社区/哨卡图片')
+
+    # photos = models.ManyToManyField(Community2LigaturesImgs, related_name='imgs', verbose_name='社区/哨卡图片', null=True,
+    #                                 blank=True)
 
     class Meta:
         verbose_name = verbose_name_plural = "社区/哨卡基本信息"
@@ -84,12 +87,11 @@ class BasicsUserInfo(models.Model):
     """
     IS_ADMIN_CHOICES_STATUS = (
         (0, "待选择"),
-        (1, "外来人员"),
-        (2, "社区居民"),
-        (3, "网格员"),
-        (4, "哨卡员"),
-        (5, "审核员"),
-        (6, "超级管理员"),
+        (1, "社区居民"),
+        (2, "网格员"),
+        (3, "哨卡员"),
+        (4, "审核员"),
+        (5, "超级管理员"),
     )
 
     STATUS = (
@@ -104,15 +106,16 @@ class BasicsUserInfo(models.Model):
     )
 
     is_admin = models.IntegerField(verbose_name="用户类别", choices=IS_ADMIN_CHOICES_STATUS, default=0)
-    name = models.CharField(verbose_name="真实姓名", max_length=12, null=False, blank=False, default="")
+    name = models.CharField(verbose_name="姓名", max_length=12, null=False, blank=False, default="")
     id_number = models.CharField(verbose_name="身份证号码", max_length=18, null=False, blank=True, default="", unique=True)
     native = models.CharField(verbose_name="籍贯", max_length=128, null=False, blank=True, default="")
     address = models.TextField(verbose_name="家庭住址", null=False, blank=True, default="")
     phone = models.CharField(verbose_name="手机号码", max_length=11, default="", null=True, blank=True, unique=True)
     email = models.EmailField(verbose_name="电子邮箱", default="", null=True, blank=True)
     status = models.IntegerField(verbose_name="审核状态", choices=STATUS, default=0)
-    gender = models.IntegerField(verbose_name="性别", null=False, blank=True, default=0)
-    ownership = models.ManyToManyField(to="Community2LigaturesInfo", null=True, verbose_name="所属网格/哨卡", default=None)
+    gender = models.IntegerField(verbose_name="性别", choices=GENDER, null=False, blank=True, default=1)
+    ownership = models.ForeignKey(to="Community2LigaturesInfo", null=False, blank=False, verbose_name="所属网格/哨卡",
+                                  default=None, on_delete=models.CASCADE)
 
     class Meta:
         verbose_name = verbose_name_plural = "用户基本信息"
@@ -121,15 +124,29 @@ class BasicsUserInfo(models.Model):
         return self.name
 
 
+class Car(models.Model):
+    """
+    车辆信息
+    """
+    user = models.ManyToManyField(verbose_name="车主", to=BasicsUserInfo)
+    carNo = models.CharField(verbose_name="车牌", max_length=10, null=False, blank=False, unique=True)
+    type = models.CharField(verbose_name="类型", max_length=10, null=False, blank=False)
+    color = models.CharField(verbose_name="颜色", max_length=10, null=False, blank=False)
+
+
 class UserInfo(models.Model):
     """
     微信用户基本信息
     """
+    GENDER = (
+        (1, "男"),
+        (0, "女"),
+    )
     openid = models.CharField(verbose_name="ID", max_length=128, null=False, blank=True, unique=True)
     nickName = models.CharField(verbose_name="用户名", max_length=32, null=True, blank=True, default=None)
     email = models.EmailField(verbose_name="邮箱", max_length=64, null=True, blank=True, default=None)
-    phone = models.IntegerField(verbose_name="电话", null=True, blank=True, default=None)
-    gender = models.IntegerField(verbose_name="性别", null=True, blank=True, default=0)
+    phone = models.CharField(verbose_name="电话", null=True, blank=True, default=None, max_length=24)
+    gender = models.IntegerField(verbose_name="性别", choices=GENDER, null=True, blank=True, default=1)
     language = models.CharField(verbose_name="语言", max_length=32, null=True, blank=True, default=None)
     city = models.CharField(verbose_name="城市", max_length=32, null=True, blank=True, default=None)
     province = models.CharField(verbose_name="省份", max_length=32, null=True, blank=True, default=None)
@@ -138,13 +155,20 @@ class UserInfo(models.Model):
     createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True, )
     lastTime = models.DateTimeField(verbose_name="最后登录时间", auto_now=True, )
     is_valid = models.BooleanField(verbose_name="是否有效(没被注销)", default=True)
-    basics_info = models.OneToOneField(to="BasicsUserInfo", on_delete=models.SET_NULL, null=True)
+    basics_info = models.OneToOneField(verbose_name="对应用户", to="BasicsUserInfo", blank=True, on_delete=models.SET_NULL,
+                                       null=True)
 
     class Meta:
         verbose_name = verbose_name_plural = "微信用户基本信息"
 
     def __str__(self):
         return self.nickName
+
+    def delete(self, *args, **kwargs):
+        if self.basics_info:
+            _ = BasicsUserInfo.objects.get(id=self.basics_info.id)
+            _.delete()
+        return super().delete(*args, **kwargs)
 
 
 class AdminUserInfo(models.Model):
@@ -159,7 +183,7 @@ class AdminUserInfo(models.Model):
 
     user_info = models.OneToOneField(to="BasicsUserInfo", on_delete=models.DO_NOTHING, null=False)
     admin_id = models.CharField(verbose_name="编号", max_length=24, null=False, blank=False, unique=True)
-    admin_ownership = models.ManyToManyField(to="Community2LigaturesInfo", null=True, verbose_name="所属网格/哨卡")
+    admin_ownership = models.ManyToManyField(to="Community2LigaturesInfo", verbose_name="所属网格/哨卡")
     admin_post = models.IntegerField(verbose_name="职务", choices=POST, )
 
     class Meta:

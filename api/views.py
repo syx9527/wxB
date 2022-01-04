@@ -203,7 +203,7 @@ class UpdateUser(APIView):
 
 class UpdateUserInfo(APIView):
     """
-    完善个人信息,更新个人信息，外来人员登记
+    完善个人信息,更新个人信息
     """
 
     def post(self, request, *args, **kwargs):
@@ -235,30 +235,32 @@ class UpdateUserInfo(APIView):
         phone = userInfo.get("phone")
         email = userInfo.get("email")
         ownership = userInfo.get("ownership")
+
+        if not ownership:
+            ownership = None
+        else:
+            ownership = int(ownership)
         gender = int(userInfo.get("gender"))
 
-        user_obasics_info = UserInfo.objects.get(openid=openid)
+        user_basics_info = UserInfo.objects.get(openid=openid)
         status = 0
         # if not user_obasics_info.basics_info:
         #     data["code"] = -1
         #     print("data", data)
         #     return Response(data)
-        if is_admin == 1 | is_admin == 2:
+        if is_admin == 1:
             status = 1
-        print("userInfo", userInfo)
-        user = BasicsUserInfo.objects.create(is_admin=is_admin, name=name, id_number=id_number, native=native,
-                                             address=address, phone=phone, email=email, gender=gender,
-                                             status=status, ownership=ownership)
+
         try:
 
             user = BasicsUserInfo.objects.create(is_admin=is_admin, name=name, id_number=id_number, native=native,
                                                  address=address, phone=phone, email=email, gender=gender,
-                                                 status=status, ownership=ownership)
+                                                 status=status, ownership_id=ownership)
 
-            user_obasics_info.basics_info = user
-            user_obasics_info.save()
+            user_basics_info.basics_info = user
+            user_basics_info.save()
         except:
-            if not user_obasics_info.basics_info:
+            if not user_basics_info.basics_info:
                 data["code"] = -1
                 print("data", data)
                 return Response(data)
@@ -267,6 +269,16 @@ class UpdateUserInfo(APIView):
             user.email = email
             user.address = address
             user.save()
+        finally:
+
+            user = BasicsUserInfo.objects.get(id=user_basics_info.basics_info_id)
+            car = userInfo.get("car")
+            for _ in car:
+                try:
+                    c = Car.objects.create(carNo=_.get('carNo'), type=_.get('type'), color=_.get('color'))
+                except:
+                    c=Car.objects.get(carNo=_.get('carNo'))
+                c.user.add(user)
 
         data["status"] = True
         data["user_status"] = user.status
@@ -321,6 +333,28 @@ class AuditList(APIView):
         # a=json.loads(json.dumps(son_data))
         # print(type(a))
         print(data)
+        return Response(data)
+
+
+class GetCommunityList(APIView):
+    """
+    获取社区/哨卡列表
+    """
+
+    def get(self, request, *args, **kwargs):
+        data = {"data": [], "count": 0, "category": -1}
+        category = request.GET.get("category")
+        print("category", category)
+        try:
+            data['category'] = int(category)
+        except:
+            return Response(data)
+
+        communityList = Community2LigaturesInfo.objects.filter(category=data['category'])
+        data['count'] = communityList.count()
+
+        for i in communityList:
+            data['data'].append({"id_number": i.id_number, "name": i.name})
         return Response(data)
 
 
@@ -446,7 +480,6 @@ class UploadingImageAPIView(GenericAPIView):
 
             # 外面访问的完整路径(包括域名)
             entirely_outside_url = conf.TEST_DOMAIN_NAME + outside_url
-
             return APIResponse(data=entirely_outside_url, data_msg="上传成功")
 
         # 如果上传的图片重复,则直接返回路径

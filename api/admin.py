@@ -45,10 +45,28 @@ class ArticleAdmin(admin.ModelAdmin):
     ordering = ('-mod_date',)
 
 
-admin.site.register(UserInfo)
+class UserInfoAdmin(admin.ModelAdmin):
+    list_display = ('openid', 'nickName', 'createTime', 'lastTime', 'is_valid', 'basics_info',)
+    list_filter = ('is_valid', 'gender',)
+    list_per_page = 15
+    # list_editable = ('is_valid',)
+    # date_hierarchy = 'pub_date'
+    ordering = ('is_valid',)
+
+
+class BasicsUserInfoAdmin(admin.ModelAdmin):
+    list_display = ('is_admin', 'name', 'id_number', 'gender', 'ownership', 'status',)
+    list_filter = ("name", 'status', 'gender', "ownership")
+    list_per_page = 15
+    # list_editable = ('is_valid',)
+    # date_hierarchy = 'pub_date'
+    ordering = ('status',)
+
+
+admin.site.register(UserInfo, UserInfoAdmin)
 admin.site.register(Community2LigaturesImgs)
 admin.site.register(Community2LigaturesInfo)
-admin.site.register(BasicsUserInfo)
+admin.site.register(BasicsUserInfo, BasicsUserInfoAdmin)
 admin.site.register(AdminUserInfo)
 admin.site.register(VaccinationRecord)
 admin.site.register(SupportingImgs)
