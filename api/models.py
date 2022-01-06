@@ -214,11 +214,11 @@ class SupportingImgs(models.Model):
     """
     证明材料
     """
-    img = models.ImageField(upload_to='supporting_materials/', verbose_name='图片地址')
-    single = models.CharField(max_length=256, null=True, blank=True, verbose_name='图片名称')
+    img = models.ImageField(upload_to='supporting_materials/', verbose_name='证明材料')
+    for_declaration = models.ForeignKey(verbose_name="申报", to="Entry2ExitDeclaration", on_delete=models.CASCADE)
 
     def __str__(self):
-        return str(self.single)
+        return str(self.for_declaration.user.name)
 
     class Meta:
         verbose_name = verbose_name_plural = "证明材料"
@@ -233,17 +233,18 @@ class Entry2ExitDeclaration(models.Model):
         (0, "待审核"),
         (1, "审核成功"),
     )
+    user = models.ForeignKey(verbose_name="社区居民", to="BasicsUserInfo", on_delete=models.CASCADE)
     subject_matte = models.CharField(verbose_name="出入事由", max_length=128, null=False, blank=False, default="")
     start_time = models.DateTimeField(verbose_name="开始时间", null=False, blank=False, default=timezone.now)
     end_time = models.DateTimeField(verbose_name="截至时间", null=False, blank=False, default=timezone.now)
-    supporting_materials = models.ManyToManyField(SupportingImgs, related_name='imgs', verbose_name='证明材料')
-    health_code = models.ImageField(verbose_name="健康吗", null=False, blank=False)
-    travel_card = models.ImageField(verbose_name="行程卡", null=False, blank=False)
-    cov_report = models.ImageField(verbose_name="核酸检测报告", null=False, blank=False)
+    health_code = models.ImageField(verbose_name="健康吗", null=False, blank=False, upload_to="entry_exit/")
+    travel_card = models.ImageField(verbose_name="行程卡", null=False, blank=False, upload_to="entry_exit/")
+    cov_report = models.ImageField(verbose_name="核酸检测报告", null=False, blank=False, upload_to="entry_exit/")
     status = models.IntegerField(verbose_name="审核状态", choices=STATUS)
+    is_valid = models.BooleanField(verbose_name="是否处于有效期", default=True, null=False, blank=False)
 
     def __str__(self):
-        return self.supporting_materials
+        return self.user.name
 
     class Meta:
         verbose_name = verbose_name_plural = "出入申报"
@@ -298,11 +299,12 @@ class ForeignWorkers(models.Model):
     name = models.CharField(verbose_name="姓名", max_length=12, null=False, blank=False, default="")
     gender = models.IntegerField(verbose_name="性别", choices=GENDER, null=False, blank=True, default=1)
     id_number = models.CharField(verbose_name="身份证号码", max_length=18, null=False, blank=True, default="", unique=True)
-    phone = models.CharField(verbose_name="手机号码", max_length=11, default="", null=True, blank=True, unique=True)
+    phone = models.CharField(verbose_name="手机号码", max_length=11, default="", null=True, blank=True, )
     status = models.IntegerField(verbose_name="审核状态", choices=STATUS, default=0)
     healthy_code = models.ImageField(verbose_name="健康码", upload_to='foreign_workers/', )
-    journey_car = models.ImageField(verbose_name="行程卡", upload_to='foreign_workers/', )
+    travel_card = models.ImageField(verbose_name="行程卡", upload_to='foreign_workers/', )
     cov_report = models.ImageField(verbose_name="核酸检测报告", upload_to='foreign_workers/', )
+    visiting_reason = models.CharField(verbose_name="来访事由", max_length=256, null=False, default='')
     by_user = models.ForeignKey(verbose_name="发起人", to="BasicsUserInfo", on_delete=models.CASCADE)
 
     class Meta:

@@ -18,7 +18,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from api.models import *
-from api.serializer.account import LoginMessageSerializer, LoginSerializer, MessageSerializer, UserInfoSerializer
+from api.serializer.account import ForeignWorkersSerializer, GetForeignWorkersSerializer, LoginMessageSerializer, \
+    LoginSerializer, MessageSerializer, ReForeignWorkersSerializer, UserInfoSerializer
 from api.utils import PictureStorageToolClass
 from imageserver.utils import conf
 from imageserver.utils.api_response import APIResponse
@@ -622,15 +623,168 @@ class ForeignWorkersRegistration(APIView):
     def post(self, request, *args, **kwargs):
         prams = request.data
         myfile = request.FILES
+        data = {"status": False, "msg": None}
+
         openid = prams.get("openid")
         name = prams.get("name")
         gender = prams.get("gender")
         phone = prams.get("phone")
+        id_number = prams.get("id_number")
+        visiting_reason = prams.get("visiting_reason")
+        code = prams.get("code")
 
         healthy_code = myfile.get("healthy_code")
-        journey_car = myfile.get("journey_car")
+        travel_card = myfile.get("travel_card")
         cov_report = myfile.get("cov_report")
 
-        print(prams)
-        data = {"status": False, "data": []}
+        ser = ForeignWorkersSerializer(data=prams)
+        if not ser.is_valid():
+            data['msg'] = '请输入正确的信息！'
+            return Response(data)
+
+        user = BasicsUserInfo.objects.get(pk=UserInfo.objects.get(openid=openid).id)
+        if user.status != 1:
+            data['msg'] = '您当前状态不可发起外来人员登记！'
+            return Response(data)
+
+        is_admin = user.is_admin
+        status = 0
+
+        try:
+            code = int(code)
+            if code == 0:
+                ForeignWorkers.objects.get(by_user=user, id_number=id_number)
+                data['msg'] = '请勿重复添加！'
+                return Response(data)
+            elif code == 1:
+                _ = ForeignWorkers.objects.exclude(status=1).get(by_user=user, id_number=id_number)
+                _.name = name
+                _.gender = gender
+                _.phone = phone
+                _.visiting_reason = visiting_reason
+                _.healthy_code = healthy_code
+                _.travel_card = travel_card
+                _.cov_report = cov_report
+                _.save()
+                data = {"status": True}
+                return Response(data)
+            else:
+                return Response(data)
+        except:
+            if code == 0:
+                # 权限待定
+                if is_admin == 4 or is_admin == 5 or is_admin == 2:
+                    status = 1
+                _ = ForeignWorkers(name=name, gender=gender, id_number=id_number, phone=phone, status=status,
+                                   visiting_reason=visiting_reason,
+                                   healthy_code=healthy_code, travel_card=travel_card, cov_report=cov_report,
+                                   by_user=user)
+                _.save()
+                data = {"status": True}
+                return Response(data)
+
+            elif code == 1:
+                return Response(data)
+
+
+class GetForeignWorkersRegistration(APIView):
+    """
+    查询外来人员登记记录
+    """
+
+    def get(self, request, *args, **kwargs):
+        prams = request.data
+        data = {"status": False, "data": [], }
+        openid = prams.get("openid")
+        status = prams.get("status")
+
+        ser = GetForeignWorkersSerializer(data=prams)
+        if not ser.is_valid():
+            data['code'] = -1
+            return Response(data)
+
+        user = BasicsUserInfo.objects.get(pk=UserInfo.objects.get(openid=openid).basics_info.id)
+        is_admin = user.is_admin
+
+        if user.status != 1:
+            data['code'] = 0
+            return Response(data)
+
+        # 权限问题待定
+        if is_admin == 4 or is_admin == 5 or is_admin == 2:
+            result = ForeignWorkers.objects.filter(status=status).values()
+        else:
+            result = ForeignWorkers.objects.filter(by_user__id=user.id).filter(status=status).values()
+        if result:
+            for i in result:
+                i['healthy_code'] = "/img/" + i['healthy_code']
+                i['travel_card'] = "/img/" + i['travel_card']
+                i['cov_report'] = "/img/" + i['cov_report']
+            data['data'] = result
+        data['status'] = True
+        return Response(data)
+
+
+class ReForeignWorkersRegistration(APIView):
+    """
+    管理员审核外来人员信息
+    """
+
+    def post(self, request, *args, **kwargs):
+        prams = request.data
+        data = {"status": False}
+        openid = prams.get("openid")
+        status = prams.get("status")
+        id_number = prams.get("id_number")
+
+        ser = ReForeignWorkersSerializer(data=prams)
+        if not ser.is_valid():
+            return Response(data)
+
+        _ = ForeignWorkers.objects.get(id_number=id_number)
+        if _.status != 0:
+            return Response(data)
+
+        user = BasicsUserInfo.objects.get(pk=UserInfo.objects.get(openid=openid).basics_info.id)
+        is_admin = user.is_admin
+        if is_admin == 2 or is_admin == 4 or is_admin == 5:
+            _.status = status
+            _.save()
+            data['status'] = True
+            return Response(data)
+
+        return Response(data)
+
+
+class EntryAndExitDeclaration(APIView):
+    """
+    社区居民提起出入申报
+    """
+
+    def post(self, request, *args, **kwargs):
+        prams = request.data
+        myfile = request.FILES
+        data = {"status": False}
+
+        openid = prams.get("openid")
+        subject_matte = prams.get("subject_matte")
+        start_time = prams.get("start_time")
+        end_time = prams.get("end_time")
+
+        healthy_code = myfile.get("healthy_code")
+        travel_card = myfile.get("travel_card")
+        cov_report = myfile.get("cov_report")
+
+        ser = ForeignWorkersSerializer(data=prams)
+        if not ser.is_valid():
+            data['code'] = -1
+            return Response(data)
+
+        user = BasicsUserInfo.objects.get(pk=UserInfo.objects.get(openid=openid).id)
+
+        _ = Entry2ExitDeclaration.objects.filter(is_valid=True).filter(user=user)
+        if _:
+            data['code'] = 0
+            return Response(data)
+
         return Response(data)

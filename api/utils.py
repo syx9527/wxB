@@ -1,6 +1,8 @@
 import hashlib
 import logging
 import os
+import random
+import time
 import uuid
 
 from django.conf import settings
@@ -113,3 +115,18 @@ class PictureStorageToolClass(object):
             return 0, 0
 
         return uuid_iamge_name, file_path_name
+
+
+def upload_image(file, upload_to):
+    ext = os.path.splitext(file.name)[1]
+
+    file_name = time.strftime('%Y%m%d', time.localtime(time.time())) + str(random.randint(10000, 99999))
+    # 重新生成文件名
+    file.name = file_name + ext
+
+    dir = os.path.join(settings.MEDIA_ROOT, "foreign_workers/")
+    destination = open(os.path.join(dir, file.name),
+                       'wb+')
+    for chunk in file.chunks():
+        destination.write(chunk)
+    destination.close()

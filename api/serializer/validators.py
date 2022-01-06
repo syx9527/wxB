@@ -18,6 +18,11 @@ def gender_validator(value):
         raise ValidationError("用户类别错误！")
 
 
+def code_type_validator(value):
+    if not re.match(r"^(0|1)$", value):
+        raise ValidationError("操作码错误！")
+
+
 def id_number__validator(value):
     if not re.match(r"^[1-9]\d{5}(18|19|([23]\d))\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]$",
                     value):
@@ -32,3 +37,12 @@ def code_validator(value):
 def email_validator(value):
     if not re.match(r"^[a-zA-Z0-9_.-]+\@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.[a-zA-Z0-9]{2,6}$", value):
         raise ValidationError("邮箱错误！")
+
+
+def status_validator(value):
+    if not re.match(r"^(2|1|0)$", value):
+        raise ValidationError("状态码错误")
+
+def admin_status_validator(value):
+    if not re.match(r"^(2|1)$", value):
+        raise ValidationError("状态码错误")

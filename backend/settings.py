@@ -165,6 +165,8 @@ CACHES = {
 MEDIA_ROOT = os.path.join(BASE_DIR, "img")
 MEDIA_URL = '/img/'
 
+FOREIGN_WORKERS_DIR = os.path.join(BASE_DIR, "foreign_workers/")
+
 # 配置邮箱服务
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.qq.com'
