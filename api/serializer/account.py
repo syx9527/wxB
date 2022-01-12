@@ -41,13 +41,21 @@ class ForeignWorkersSerializer(serializers.Serializer):
     openid = serializers.CharField(label="微信标识id", )
     code = serializers.CharField(label="操作码", validators=[code_type_validator])
 
-    healthy_code = serializers.FileField(label="健康码")
-    travel_card = serializers.FileField(label="行程卡")
-    cov_report = serializers.FileField(label="核酸检测报告")
+    # health_code = serializers.FileField(label="健康码")
+    # travel_card = serializers.FileField(label="行程卡")
+    # cov_report = serializers.FileField(label="核酸检测报告")
+
+    health_code = serializers.CharField(label="健康码")
+    # health_code = serializers.FileField(label="健康码")
+
+    travel_card = serializers.CharField(label="行程卡")
+    cov_report = serializers.CharField(label="核酸检测报告")
 
 
 class GetForeignWorkersSerializer(serializers.Serializer):
     openid = serializers.CharField(label="openid", )
+    page = serializers.CharField(label="页码", )
+    size = serializers.CharField(label="每页数据量", )
     status = serializers.CharField(label="status", validators=[status_validator])
 
 
@@ -63,6 +71,12 @@ class EntryAndExitDeclarationSerializer(serializers.Serializer):
     start_time = serializers.CharField(label="起始时间", )
     end_time = serializers.CharField(label="截止时间", )
 
-    healthy_code = serializers.FileField(label="健康码")
-    travel_card = serializers.FileField(label="行程卡")
-    cov_report = serializers.FileField(label="核酸检测报告")
+    health_code = serializers.CharField(label="健康码")
+    travel_card = serializers.CharField(label="行程卡")
+    cov_report = serializers.CharField(label="核酸检测报告")
+
+
+class ReEntryAndExitDeclarationSerializer(serializers.Serializer):
+    openid = serializers.CharField(label="openid", )
+    status = serializers.CharField(label="审核员审核状态", validators=[en_exit_status_validator])
+    id_number = serializers.CharField(label="身份证", validators=[id_number__validator, ])

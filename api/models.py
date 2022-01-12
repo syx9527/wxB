@@ -178,15 +178,15 @@ class AdminUserInfo(models.Model):
     网格/哨卡员/审核员信息
     """
     POST = (
-        (3, "网格员"),
-        (4, "哨卡员"),
-        (5, "审核员"),
+        (2, "网格员"),
+        (3, "哨卡员"),
+        (4, "审核员"),
     )
 
-    user_info = models.OneToOneField(to="BasicsUserInfo", on_delete=models.DO_NOTHING, null=False)
+    user_info = models.OneToOneField(to="BasicsUserInfo", to_field="id", on_delete=models.DO_NOTHING, null=False)
     admin_id = models.CharField(verbose_name="编号", max_length=24, null=False, blank=False, unique=True)
-    admin_ownership = models.ManyToManyField(to="Community2LigaturesInfo", verbose_name="所属网格/哨卡")
-    admin_post = models.IntegerField(verbose_name="职务", choices=POST, )
+    admin_ownership = models.ForeignKey(to="Community2LigaturesInfo", verbose_name="所属网格/哨卡", on_delete=models.CASCADE)
+    admin_post = models.IntegerField(verbose_name="职务", choices=POST, default=2)
 
     class Meta:
         verbose_name = verbose_name_plural = "网格/哨卡员/审核员信息"
@@ -214,7 +214,8 @@ class SupportingImgs(models.Model):
     """
     证明材料
     """
-    img = models.ImageField(upload_to='supporting_materials/', verbose_name='证明材料')
+    UPLOAD_TO = "supporting_materials/"
+    img = models.ImageField(upload_to=UPLOAD_TO, verbose_name='证明材料')
     for_declaration = models.ForeignKey(verbose_name="申报", to="Entry2ExitDeclaration", on_delete=models.CASCADE)
 
     def __str__(self):
@@ -233,15 +234,19 @@ class Entry2ExitDeclaration(models.Model):
         (0, "待审核"),
         (1, "审核成功"),
     )
+    UPLOAD_TO = "entry_exit/"
     user = models.ForeignKey(verbose_name="社区居民", to="BasicsUserInfo", on_delete=models.CASCADE)
     subject_matte = models.CharField(verbose_name="出入事由", max_length=128, null=False, blank=False, default="")
     start_time = models.DateTimeField(verbose_name="开始时间", null=False, blank=False, default=timezone.now)
     end_time = models.DateTimeField(verbose_name="截至时间", null=False, blank=False, default=timezone.now)
-    health_code = models.ImageField(verbose_name="健康吗", null=False, blank=False, upload_to="entry_exit/")
-    travel_card = models.ImageField(verbose_name="行程卡", null=False, blank=False, upload_to="entry_exit/")
-    cov_report = models.ImageField(verbose_name="核酸检测报告", null=False, blank=False, upload_to="entry_exit/")
-    status = models.IntegerField(verbose_name="审核状态", choices=STATUS)
+    health_code = models.ImageField(verbose_name="健康吗", null=False, blank=False, upload_to=UPLOAD_TO)
+    travel_card = models.ImageField(verbose_name="行程卡", null=False, blank=False, upload_to=UPLOAD_TO)
+    cov_report = models.ImageField(verbose_name="核酸检测报告", null=False, blank=False, upload_to=UPLOAD_TO)
+    status = models.IntegerField(verbose_name="审核状态", choices=STATUS, default=0)
     is_valid = models.BooleanField(verbose_name="是否处于有效期", default=True, null=False, blank=False)
+    create_time = models.DateTimeField(verbose_name="申报时间", auto_now_add=True)
+    audit_time = models.DateTimeField(verbose_name="审核时间", null=True, blank=False, default=None)
+
 
     def __str__(self):
         return self.user.name
@@ -252,11 +257,17 @@ class Entry2ExitDeclaration(models.Model):
 
 class AuditLog(models.Model):
     """
-    人员审核记录表
+    人员出入审核记录表
     """
-    auditor = models.ForeignKey(to="AdminUserInfo", on_delete=models.DO_NOTHING)
+
+    STATUS = (
+        (1, "审核通过"),
+        (-1, "审核失败"),
+    )
+    auditor = models.ForeignKey(verbose_name='审核员', to="AdminUserInfo", on_delete=models.DO_NOTHING)
     audit_time = models.DateTimeField(verbose_name="审核时间", null=False, blank=False, auto_now=True)
-    audit_user = models.ForeignKey(to="BasicsUserInfo", on_delete=models.DO_NOTHING, null=True)
+    audit_user = models.ForeignKey(verbose_name='居民', to="BasicsUserInfo", on_delete=models.DO_NOTHING, null=True)
+    result = models.IntegerField(verbose_name="审核结果", choices=STATUS, default=1)
 
     def __str__(self):
         return self.auditor.user_info.name
@@ -269,10 +280,11 @@ class TrafficRecord(models.Model):
     """
     通行记录
     """
+    UPLOAD_TO = "trajectory_diagram/"
     person_name = models.ManyToManyField(to="BasicsUserInfo", )
     address_names = models.ManyToManyField(to="Community2LigaturesInfo")  # 建立多对多关系，将卡点或者社区信息绑定至通行记录中
     data_time = models.DateTimeField(auto_now=True, verbose_name="记录时间")
-    trajectory_diagram = models.ImageField(verbose_name="轨迹图", upload_to="trajectory_diagram/")
+    trajectory_diagram = models.ImageField(verbose_name="轨迹图", upload_to=UPLOAD_TO)
 
     # def __str__(self):
     #     return self.person_name
@@ -295,20 +307,29 @@ class ForeignWorkers(models.Model):
         (1, "男"),
         (0, "女"),
     )
+    UPLOAD_TO = "foreign_workers/"
 
     name = models.CharField(verbose_name="姓名", max_length=12, null=False, blank=False, default="")
     gender = models.IntegerField(verbose_name="性别", choices=GENDER, null=False, blank=True, default=1)
-    id_number = models.CharField(verbose_name="身份证号码", max_length=18, null=False, blank=True, default="", unique=True)
+    id_number = models.CharField(verbose_name="身份证号码", max_length=18, null=False, blank=True, default="", )
     phone = models.CharField(verbose_name="手机号码", max_length=11, default="", null=True, blank=True, )
     status = models.IntegerField(verbose_name="审核状态", choices=STATUS, default=0)
-    healthy_code = models.ImageField(verbose_name="健康码", upload_to='foreign_workers/', )
-    travel_card = models.ImageField(verbose_name="行程卡", upload_to='foreign_workers/', )
-    cov_report = models.ImageField(verbose_name="核酸检测报告", upload_to='foreign_workers/', )
+    health_code = models.ImageField(verbose_name="健康码", upload_to=UPLOAD_TO, )
+    travel_card = models.ImageField(verbose_name="行程卡", upload_to=UPLOAD_TO, )
+    cov_report = models.ImageField(verbose_name="核酸检测报告", upload_to=UPLOAD_TO, )
     visiting_reason = models.CharField(verbose_name="来访事由", max_length=256, null=False, default='')
     by_user = models.ForeignKey(verbose_name="发起人", to="BasicsUserInfo", on_delete=models.CASCADE)
+    is_valid = models.BooleanField(verbose_name="是否处于有效期", default=True, null=False, blank=False)
+    create_time = models.DateTimeField(verbose_name="登记时间", auto_now_add=True)
+    audit_time = models.DateTimeField(verbose_name="审核时间", null=True, blank=False, default=None)
 
     class Meta:
         verbose_name = verbose_name_plural = "外来人员登记"
+
+    def save(self, *args, **kwargs):
+        if self.status == 2:
+            self.is_valid = False
+        super().save()
 
     def __str__(self):
         return self.name
@@ -331,3 +352,21 @@ class Areas(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class ImgUpload(models.Model):
+    UPLOAD_TO = "temp/"
+    # img = models.ImageField(verbose_name="图片", upload_to="temp/")
+    img = models.ImageField(verbose_name="图片", upload_to=UPLOAD_TO, unique=False)
+    update_time = models.DateTimeField(verbose_name="上传时间", auto_now=True)
+    is_valid = models.BooleanField(default=True)
+
+
+class AutoImgName(models.Model):
+    # op=models.Field
+
+    class Meta:
+        db_table = 'id_number'
+
+    def __str__(self):
+        return self.id

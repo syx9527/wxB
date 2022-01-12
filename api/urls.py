@@ -20,8 +20,10 @@ urlpatterns = [
          name="re_foreign_workers_registration"),
 
     path("entry_exit_declaration/", EntryAndExitDeclaration.as_view(), name="entry_exit_declaration"),
+    path("get_entry_exit_declaration/", GetEntryAndExitDeclaration.as_view(), name="get_entry_exit_declaration"),
+    path("re_entry_exit_declaration/", ReEntryAndExitDeclaration.as_view(), name="re_entry_exit_declaration"),
 
-    path("get_audit_log/", AuditLog.as_view(), name="get_audit_log"),
+    # path("get_audit_log/", GetAuditLog.as_view(), name="get_audit_log"),
 
     path("user_exit/", UserExit.as_view(), name="user_exit"),
 
@@ -29,4 +31,5 @@ urlpatterns = [
     path('uploading', UploadingImageAPIView.as_view()),
 
     path("test/", Test.as_view(), name="test"),
+    path("upload_img/", UploadImg.as_view(), name="test"),
 ]

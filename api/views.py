@@ -1,5 +1,6 @@
 # Create your views here.
 # from rest_framework.response import JsonResponse
+import datetime
 import json
 import logging
 import random
@@ -10,7 +11,7 @@ import requests
 from django.conf import settings
 from django.core import serializers
 from django.core.cache import cache
-from django.core.paginator import Paginator
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.forms import model_to_dict
 from django.http import HttpResponse
 from rest_framework.generics import GenericAPIView
@@ -18,9 +19,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from api.models import *
-from api.serializer.account import ForeignWorkersSerializer, GetForeignWorkersSerializer, LoginMessageSerializer, \
-    LoginSerializer, MessageSerializer, ReForeignWorkersSerializer, UserInfoSerializer
-from api.utils import PictureStorageToolClass
+from api.serializer.account import *
+from api.utils import PictureStorageToolClass, copy_file
 from imageserver.utils import conf
 from imageserver.utils.api_response import APIResponse
 
@@ -359,7 +359,7 @@ class GetCommunityList(APIView):
         return Response(data)
 
 
-class AuditLog(APIView):
+class GetAuditLog(APIView):
     """
     人员信息审核记录
     """
@@ -380,10 +380,10 @@ class UserExit(APIView):
         return Response(data)
 
 
-class Test(APIView):
-    def get(self, request, *args, **kwargs):
-        data = {"status": True, "data": "666"}
-        return Response(data)
+# class Test(APIView):
+#     def get(self, request, *args, **kwargs):
+#         data = {"status": True, "data": "666"}
+#         return Response(data)
 
 
 class TokenAPIView(GenericAPIView):
@@ -622,9 +622,7 @@ class ForeignWorkersRegistration(APIView):
 
     def post(self, request, *args, **kwargs):
         prams = request.data
-        myfile = request.FILES
-        data = {"status": False, "msg": None}
-
+        data = {"status": False, }
         openid = prams.get("openid")
         name = prams.get("name")
         gender = prams.get("gender")
@@ -633,39 +631,55 @@ class ForeignWorkersRegistration(APIView):
         visiting_reason = prams.get("visiting_reason")
         code = prams.get("code")
 
-        healthy_code = myfile.get("healthy_code")
-        travel_card = myfile.get("travel_card")
-        cov_report = myfile.get("cov_report")
+        health_code = prams.get("health_code")
+        travel_card = prams.get("travel_card")
+        cov_report = prams.get("cov_report")
 
         ser = ForeignWorkersSerializer(data=prams)
+        # print("prams", prams)
+        # print("health_code", health_code)
+        # print("travel_card", travel_card)
+        # print("cov_report", cov_report)
+
         if not ser.is_valid():
-            data['msg'] = '请输入正确的信息！'
+            # for i in ser.errors.items():
+            #     print(i)
+            # data['msg'] = '请输入正确的信息！'
+            data['msg'] = ser.errors.items()
             return Response(data)
 
-        user = BasicsUserInfo.objects.get(pk=UserInfo.objects.get(openid=openid).id)
+        user = BasicsUserInfo.objects.get(pk=UserInfo.objects.get(openid=openid).basics_info_id)
         if user.status != 1:
             data['msg'] = '您当前状态不可发起外来人员登记！'
             return Response(data)
 
         is_admin = user.is_admin
         status = 0
-
+        upload_to = ForeignWorkers.UPLOAD_TO
         try:
             code = int(code)
             if code == 0:
-                ForeignWorkers.objects.get(by_user=user, id_number=id_number)
+                ForeignWorkers.objects.get(by_user=user, id_number=id_number, is_valid=True)
                 data['msg'] = '请勿重复添加！'
                 return Response(data)
             elif code == 1:
+                try:
+                    copy_file(health_code=health_code, travel_card=travel_card, cov_report=cov_report,
+                              model=ForeignWorkers)
+                except:
+                    return Response(data)
                 _ = ForeignWorkers.objects.exclude(status=1).get(by_user=user, id_number=id_number)
+
                 _.name = name
                 _.gender = gender
                 _.phone = phone
                 _.visiting_reason = visiting_reason
-                _.healthy_code = healthy_code
-                _.travel_card = travel_card
-                _.cov_report = cov_report
+
+                _.health_code = upload_to + health_code
+                _.travel_card = upload_to + travel_card
+                _.cov_report = upload_to + cov_report
                 _.save()
+
                 data = {"status": True}
                 return Response(data)
             else:
@@ -675,16 +689,23 @@ class ForeignWorkersRegistration(APIView):
                 # 权限待定
                 if is_admin == 4 or is_admin == 5 or is_admin == 2:
                     status = 1
+                try:
+                    copy_file(health_code=health_code, travel_card=travel_card, cov_report=cov_report,
+                              model=ForeignWorkers)
+                except:
+                    return Response(data)
                 _ = ForeignWorkers(name=name, gender=gender, id_number=id_number, phone=phone, status=status,
-                                   visiting_reason=visiting_reason,
-                                   healthy_code=healthy_code, travel_card=travel_card, cov_report=cov_report,
+                                   visiting_reason=visiting_reason, health_code=upload_to + health_code,
+                                   travel_card=upload_to + travel_card, cov_report=upload_to + cov_report,
                                    by_user=user)
                 _.save()
+
                 data = {"status": True}
                 return Response(data)
 
             elif code == 1:
                 return Response(data)
+            return Response(data)
 
 
 class GetForeignWorkersRegistration(APIView):
@@ -693,14 +714,19 @@ class GetForeignWorkersRegistration(APIView):
     """
 
     def get(self, request, *args, **kwargs):
-        prams = request.data
+        prams = request.GET
         data = {"status": False, "data": [], }
         openid = prams.get("openid")
         status = prams.get("status")
+        page = prams.get("page")
+        size = prams.get("size")
 
+        # print(prams)
         ser = GetForeignWorkersSerializer(data=prams)
         if not ser.is_valid():
             data['code'] = -1
+            data['msg'] = ser.errors
+            # print(data)
             return Response(data)
 
         user = BasicsUserInfo.objects.get(pk=UserInfo.objects.get(openid=openid).basics_info.id)
@@ -712,15 +738,44 @@ class GetForeignWorkersRegistration(APIView):
 
         # 权限问题待定
         if is_admin == 4 or is_admin == 5 or is_admin == 2:
-            result = ForeignWorkers.objects.filter(status=status).values()
+            result = ForeignWorkers.objects.filter()
         else:
-            result = ForeignWorkers.objects.filter(by_user__id=user.id).filter(status=status).values()
-        if result:
-            for i in result:
-                i['healthy_code'] = "/img/" + i['healthy_code']
-                i['travel_card'] = "/img/" + i['travel_card']
-                i['cov_report'] = "/img/" + i['cov_report']
-            data['data'] = result
+            result = ForeignWorkers.objects.filter(by_user=user.id)
+        status = int(status)
+        if status != 3:
+            result = result.filter(status=status)
+
+        if result.exists():
+            paginator = Paginator(result, size)
+            count = paginator.count
+            try:
+                posts = paginator.page(page)
+            except PageNotAnInteger:  # 不是数字
+                posts = paginator.page(1)
+            except EmptyPage:  # 超出页码范围
+                posts = paginator.page(paginator.num_pages)
+            contacts = posts.object_list
+            from django.core import serializers
+
+            son_data = serializers.serialize("python", contacts, ensure_ascii=False)
+            res = []
+            for i in son_data:
+                i = i.get("fields")
+                # del i['id']
+                i['health_code'] = settings.MEDIA_URL + i['health_code']
+                i['travel_card'] = settings.MEDIA_URL + i['travel_card']
+                i['cov_report'] = settings.MEDIA_URL + i['cov_report']
+                i['create_time'] = datetime.datetime.strftime(i['create_time'], '%Y-%m-%d %H:%M:%S')
+                if i['audit_time']:
+                    i['audit_time'] = datetime.datetime.strftime(i['audit_time'], '%Y-%m-%d %H:%M:%S')
+                res.append(i)
+
+            data['data'] = res
+            data['count'] = count
+
+        else:
+            data['data'] = []
+            data['count'] = 0
         data['status'] = True
         return Response(data)
 
@@ -740,15 +795,22 @@ class ReForeignWorkersRegistration(APIView):
         ser = ReForeignWorkersSerializer(data=prams)
         if not ser.is_valid():
             return Response(data)
-
-        _ = ForeignWorkers.objects.get(id_number=id_number)
+        status = int(status)
+        try:
+            _ = ForeignWorkers.objects.get(id_number=id_number, is_valid=True)
+        except:
+            return Response(data)
         if _.status != 0:
             return Response(data)
 
         user = BasicsUserInfo.objects.get(pk=UserInfo.objects.get(openid=openid).basics_info.id)
+        if user.status != 1:
+            return Response(data)
         is_admin = user.is_admin
-        if is_admin == 2 or is_admin == 4 or is_admin == 5:
+
+        if is_admin in (2, 4, 5):
             _.status = status
+            _.audit_time = timezone.now()
             _.save()
             data['status'] = True
             return Response(data)
@@ -763,7 +825,7 @@ class EntryAndExitDeclaration(APIView):
 
     def post(self, request, *args, **kwargs):
         prams = request.data
-        myfile = request.FILES
+
         data = {"status": False}
 
         openid = prams.get("openid")
@@ -771,20 +833,178 @@ class EntryAndExitDeclaration(APIView):
         start_time = prams.get("start_time")
         end_time = prams.get("end_time")
 
-        healthy_code = myfile.get("healthy_code")
-        travel_card = myfile.get("travel_card")
-        cov_report = myfile.get("cov_report")
+        start_time = timezone.datetime.strptime(start_time, '%Y-%m-%d %H:%M')
+        end_time = timezone.datetime.strptime(end_time, '%Y-%m-%d %H:%M')
 
-        ser = ForeignWorkersSerializer(data=prams)
+        health_code = prams.get("health_code")
+        travel_card = prams.get("travel_card")
+        cov_report = prams.get("cov_report")
+
+        ser = EntryAndExitDeclarationSerializer(data=prams)
         if not ser.is_valid():
+            for k, v in ser.errors.items():
+                print(k, v)
             data['code'] = -1
+            data['msg'] = ser.errors
             return Response(data)
-
-        user = BasicsUserInfo.objects.get(pk=UserInfo.objects.get(openid=openid).id)
-
+        upload_to = Entry2ExitDeclaration.UPLOAD_TO
+        try:
+            user = BasicsUserInfo.objects.get(pk=UserInfo.objects.get(openid=openid).basics_info.id)
+        except:
+            return Response(data)
         _ = Entry2ExitDeclaration.objects.filter(is_valid=True).filter(user=user)
+
         if _:
             data['code'] = 0
             return Response(data)
 
+        _ = Entry2ExitDeclaration(user=user, subject_matte=subject_matte, start_time=start_time, end_time=end_time,
+                                  health_code=upload_to + health_code, travel_card=upload_to + travel_card,
+                                  cov_report=upload_to + cov_report)
+        _.save()
+        copy_file(health_code=health_code, travel_card=travel_card, cov_report=cov_report, model=Entry2ExitDeclaration)
+        data['status'] = True
         return Response(data)
+
+
+class GetEntryAndExitDeclaration(APIView):
+    """
+    查询申报记录
+    """
+
+    def get(self, request, *args, **kwargs):
+        prams = request.GET
+
+        data = {"status": False}
+        openid = prams.get("openid")
+        try:
+            user = BasicsUserInfo.objects.get(pk=UserInfo.objects.get(openid=openid).basics_info.pk)
+            is_admin = user.is_admin
+        except:
+            return Response(data)
+        if is_admin == 1:
+            result = Entry2ExitDeclaration.objects.filter(user=user).values()
+        elif is_admin in (2, 4, 5):
+            result = Entry2ExitDeclaration.objects.filter(status=0, is_valid=True).values()
+        else:
+            return Response(data)
+        if result:
+            for i in result:
+                del i['id']
+                i['health_code'] = settings.MEDIA_URL + i['health_code']
+                i['travel_card'] = settings.MEDIA_URL + i['travel_card']
+                i['cov_report'] = settings.MEDIA_URL + i['cov_report']
+                i['start_time'] = i['start_time'].strftime('%Y-%m-%d %H:%M')
+                i['end_time'] = i['end_time'].strftime('%Y-%m-%d %H:%M')
+                if is_admin != 1:
+                    i['id_number'] = BasicsUserInfo.objects.get(pk=i['user_id']).id_number
+                del i['user_id']
+            # print(result)
+        data['data'] = result
+        data['count'] = len(result)
+        data['status'] = True
+        return Response(data)
+
+
+class ReEntryAndExitDeclaration(APIView):
+    """
+    网格员审批社区人员外出申报
+    """
+
+    def post(self, request, *args, **kwargs):
+        prams = request.data
+
+        data = {"status": False}
+
+        ser = ReEntryAndExitDeclarationSerializer(data=prams)
+        if not ser.is_valid():
+            return Response(data)
+        openid = prams.get("openid")
+        status = int(prams.get("status"))
+        id_number = prams.get("id_number")
+        is_valid = True
+        if status == -1:
+            is_valid = False
+        try:
+
+            admin_user = BasicsUserInfo.objects.get(pk=UserInfo.objects.get(openid=openid).basics_info)
+            is_admin = admin_user.is_admin
+
+            if is_admin not in (2, 4, 5):
+                return Response(data)
+
+            user = BasicsUserInfo.objects.get(id_number=id_number)
+
+            _ = Entry2ExitDeclaration.objects.get(status=0, is_valid=True, user=user)
+
+
+        except:
+            return Response(data)
+
+        _.status = status
+        _.is_valid = is_valid
+        _.save()
+
+        # 创建审核记录
+        AuditLog.objects.create(auditor=admin_user, audit_user=user, result=status)
+
+        data['status'] = True
+        return Response(data)
+
+
+class UploadImg(APIView):
+    """
+    上传图片
+    """
+
+    def post(self, request, *args, **kwargs):
+
+        myfile = request.FILES
+        data = {"status": False}
+        my_file = myfile.get("file")
+
+        try:
+            if my_file:
+                suffix = my_file.name.split('.')[-1]
+
+                now_time = datetime.datetime.now().strftime('%Y%m%d')
+                end_random = "%05d" % random.randint(0, 10000)
+
+                my_file.name = now_time + "%05d" % AutoImgName.objects.create().pk + end_random + "." + suffix
+
+                _ = ImgUpload(img=my_file)
+                _.save()
+                url = _.img.url.split("/img/temp/")[1]
+
+                data['status'] = True
+                data['img_path'] = url
+            print(data)
+        except Exception as e:
+            print(e)
+        return Response(data)
+        # return JsonResponse(data)
+
+
+class Test(APIView):
+    """
+    测试
+    """
+
+    def post(self, request, *args, **kwargs):
+        prams = request.data
+        myfile = request.FILES
+        data = {"status": False, "msg": None}
+
+        openid = prams.get("openid")
+        name = prams.get("name")
+        gender = prams.get("gender")
+        phone = prams.get("phone")
+        id_number = prams.get("id_number")
+        visiting_reason = prams.get("visiting_reason")
+        code = prams.get("code")
+
+        health_code = myfile.get("health_code")
+        travel_card = myfile.get("travel_card")
+        cov_report = myfile.get("cov_report")
+        print("prams", prams)
+        print("myfile", myfile)

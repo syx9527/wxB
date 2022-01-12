@@ -111,12 +111,12 @@ AUTH_PASSWORD_VALIDATORS = [
 # LANGUAGE_CODE = 'en-us'
 LANGUAGE_CODE = 'zh-Hans'
 # TIME_ZONE = 'UTC'
-TIME_ZONE = 'Asia/shanghai'
+TIME_ZONE = 'Asia/Shanghai'
 USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = True
+USE_TZ = False
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
@@ -164,6 +164,7 @@ CACHES = {
 # 图片访问目录
 MEDIA_ROOT = os.path.join(BASE_DIR, "img")
 MEDIA_URL = '/img/'
+# IMG_ROOT=os.path.join((MEDIA_ROOT))
 
 FOREIGN_WORKERS_DIR = os.path.join(BASE_DIR, "foreign_workers/")
 

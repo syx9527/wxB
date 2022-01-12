@@ -1,3 +1,4 @@
+import datetime
 import hashlib
 import logging
 import os
@@ -6,9 +7,11 @@ import time
 import uuid
 
 from django.conf import settings
+from django.core.files import move as dj_move
 from django.core.mail import send_mail
 
 from imageserver.utils import conf
+from .models import *
 
 logger = logging.getLogger('django')
 
@@ -130,3 +133,23 @@ def upload_image(file, upload_to):
     for chunk in file.chunks():
         destination.write(chunk)
     destination.close()
+
+
+def copy_file(model, *args, **kwargs):
+    for k, v in kwargs.items():
+        _ = ImgUpload.objects.get(img=ImgUpload.UPLOAD_TO + v)
+        _.is_valid = False
+        _.save()
+        f_path = os.path.join(settings.MEDIA_ROOT, ImgUpload.UPLOAD_TO, v)
+        to_path = os.path.join(settings.MEDIA_ROOT, model.UPLOAD_TO, v)
+        dj_move.file_move_safe(f_path, to_path)
+
+
+def utc_to_local(utc):
+    # utc = "2018-07-17T08:48:31.151Z"
+    UTC_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
+    utcTime = datetime.datetime.strptime(utc, UTC_FORMAT)
+    localtime = utcTime + datetime.timedelta(hours=8)
+    localtime = datetime.datetime.strftime(localtime, '%Y-%m-%d %H:%M:%S')
+    return localtime
+# utc_to_local("2018-07-17T08:48:31.151Z")
