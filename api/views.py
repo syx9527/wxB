@@ -9,7 +9,7 @@ import uuid
 import django_redis
 import requests
 from django.conf import settings
-from django.core import serializers
+# from django.core import serializers
 from django.core.cache import cache
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.forms import model_to_dict
@@ -236,6 +236,7 @@ class UpdateUserInfo(APIView):
         phone = userInfo.get("phone")
         email = userInfo.get("email")
         ownership = userInfo.get("ownership")
+        print(userInfo)
 
         if not ownership:
             ownership = None
@@ -276,10 +277,16 @@ class UpdateUserInfo(APIView):
             car = userInfo.get("car")
             for _ in car:
                 try:
-                    c = Car.objects.create(carNo=_.get('carNo'), type=_.get('type'), color=_.get('color'))
+                    Car.objects.create(user=user, carNo=_.get('carNo'), type=_.get('type'), color=_.get('color'))
                 except:
-                    c = Car.objects.get(carNo=_.get('carNo'))
-                c.user.add(user)
+                    try:
+                        c = Car.objects.get(carNo=_.get('carNo'), user=user, )
+                    except:
+                        data['msg'] = "车牌%s已经被其他用户添加" % _.get('carNo')
+                        return Response(data)
+                    c.type = _.get("type")
+                    c.color = _.get("color")
+                    c.save()
 
         data["status"] = True
         data["user_status"] = user.status
@@ -294,46 +301,62 @@ class AuditList(APIView):
     """
 
     def get(self, request, *args, **kwargs):
-        data = {"status": False, "data": []}
+        data = {"status": False, }
         print(request.GET)
         openid = request.GET.get("openid")
         # code = request.GET.get("code")
-        code = 0
 
         page = request.GET.get("page")
-        if not page:
-            page = 1
-        else:
-            page = int(page)
-        size = request.GET.get("size")
-        if not size:
-            size = 10
-        else:
-            size = int(size)
-
+        status = request.GET.get("status")
         try:
-            AdminUserInfo.objects.get(user_info__userinfo__openid=openid, admin_post=5)
+            if not page:
+                page = 1
+            else:
+                page = int(page)
+            size = request.GET.get("size")
+            if not size:
+                size = 10
+            else:
+                size = int(size)
+            if not status:
+                status = 3
+            else:
+                status = int(status)
         except:
             return Response(data)
 
-        response_list = BasicsUserInfo.objects.filter(status=code)
+        try:
+            # AdminUserInfo.objects.get(user_info__userinfo__openid=openid, admin_post=5)
+            admin_user = BasicsUserInfo.objects.get(pk=UserInfo.objects.get(openid=openid).basics_info.pk)
+            is_admin = admin_user.is_admin
+            if is_admin not in (2, 4, 5):
+                return Response(data)
+        except:
+            return Response(data)
+
+        response_list = BasicsUserInfo.objects.all()
+
+        if status != 3:
+            response_list = response_list.filter(status=status)
         if response_list.exists():
             paginator = Paginator(response_list, size)
-            count = paginator.num_pages
+            count = paginator.count
             if page > count:
                 page = 1
             contacts = paginator.page(page).object_list
+            from django.core import serializers
             son_data = serializers.serialize("python", contacts, ensure_ascii=False)
 
             son_data = [i.get("fields") for i in son_data]
             data['data'] = son_data
             data['count'] = count
-            data['page'] = page
-            data['status'] = True
 
-        # a=json.loads(json.dumps(son_data))
-        # print(type(a))
-        print(data)
+        else:
+            data['data'] = []
+            data['count'] = 0
+        data['status'] = True
+
+        print("data", data)
         return Response(data)
 
 
@@ -351,11 +374,11 @@ class GetCommunityList(APIView):
         except:
             return Response(data)
 
-        communityList = Community2LigaturesInfo.objects.filter(category=data['category'])
-        data['count'] = communityList.count()
+        community_list = Community2LigaturesInfo.objects.filter(category=data['category'])
+        data['count'] = community_list.count()
 
-        for i in communityList:
-            data['data'].append({"id_number": i.id_number, "name": i.name})
+        for i in community_list:
+            data['data'].append({"id_number": i.id, "name": i.name})
         return Response(data)
 
 
@@ -715,7 +738,7 @@ class GetForeignWorkersRegistration(APIView):
 
     def get(self, request, *args, **kwargs):
         prams = request.GET
-        data = {"status": False, "data": [], }
+        data = {"status": False, }
         openid = prams.get("openid")
         status = prams.get("status")
         page = prams.get("page")
@@ -744,7 +767,7 @@ class GetForeignWorkersRegistration(APIView):
         status = int(status)
         if status != 3:
             result = result.filter(status=status)
-
+        result = result.order_by("-create_time")
         if result.exists():
             paginator = Paginator(result, size)
             count = paginator.count
@@ -761,13 +784,17 @@ class GetForeignWorkersRegistration(APIView):
             res = []
             for i in son_data:
                 i = i.get("fields")
-                # del i['id']
+
                 i['health_code'] = settings.MEDIA_URL + i['health_code']
                 i['travel_card'] = settings.MEDIA_URL + i['travel_card']
+                i['by_user'] = BasicsUserInfo.objects.get(pk=i['by_user'])
+
                 i['cov_report'] = settings.MEDIA_URL + i['cov_report']
                 i['create_time'] = datetime.datetime.strftime(i['create_time'], '%Y-%m-%d %H:%M:%S')
                 if i['audit_time']:
                     i['audit_time'] = datetime.datetime.strftime(i['audit_time'], '%Y-%m-%d %H:%M:%S')
+                # del i['id']
+                del i['by_user']
                 res.append(i)
 
             data['data'] = res
@@ -840,6 +867,11 @@ class EntryAndExitDeclaration(APIView):
         travel_card = prams.get("travel_card")
         cov_report = prams.get("cov_report")
 
+        Supporting_imgs = prams.get("supportingMaterials")
+        print("SupportingImgs", SupportingImgs, type(SupportingImgs))
+
+        # return Response("ok")
+
         ser = EntryAndExitDeclarationSerializer(data=prams)
         if not ser.is_valid():
             for k, v in ser.errors.items():
@@ -857,12 +889,17 @@ class EntryAndExitDeclaration(APIView):
         if _:
             data['code'] = 0
             return Response(data)
-
+        copy_file(health_code=health_code, travel_card=travel_card, cov_report=cov_report, model=Entry2ExitDeclaration)
         _ = Entry2ExitDeclaration(user=user, subject_matte=subject_matte, start_time=start_time, end_time=end_time,
                                   health_code=upload_to + health_code, travel_card=upload_to + travel_card,
                                   cov_report=upload_to + cov_report)
         _.save()
-        copy_file(health_code=health_code, travel_card=travel_card, cov_report=cov_report, model=Entry2ExitDeclaration)
+
+        for i in Supporting_imgs:
+            copy_file(img=i, model=SupportingImgs)
+            upload_to = SupportingImgs.UPLOAD_TO
+            SupportingImgs.objects.create(img=upload_to + i, for_declaration=_)
+
         data['status'] = True
         return Response(data)
 
@@ -877,31 +914,66 @@ class GetEntryAndExitDeclaration(APIView):
 
         data = {"status": False}
         openid = prams.get("openid")
+        status = prams.get("status")
+        page = prams.get("page")
+        size = prams.get("size")
+        ser = GetEntryAndExitDeclarationSerializer(data=prams)
+        if not ser.is_valid():
+            data['code'] = -1
+            data['msg'] = ser.errors
+
+            return Response(data)
+
         try:
+            status = int(status)
+            size = int(size)
             user = BasicsUserInfo.objects.get(pk=UserInfo.objects.get(openid=openid).basics_info.pk)
             is_admin = user.is_admin
+
         except:
             return Response(data)
         if is_admin == 1:
-            result = Entry2ExitDeclaration.objects.filter(user=user).values()
+            result = Entry2ExitDeclaration.objects.filter(user=user)
+
         elif is_admin in (2, 4, 5):
-            result = Entry2ExitDeclaration.objects.filter(status=0, is_valid=True).values()
+            result = Entry2ExitDeclaration.objects.filter()
         else:
             return Response(data)
-        if result:
-            for i in result:
-                del i['id']
+        result = result.order_by("-create_time")
+        if status != 3:
+            result = result.filter(status=status)
+
+        # 数据分页返回
+        if result.exists():
+            paginator = Paginator(result, size)
+            count = paginator.count
+            try:
+                posts = paginator.page(page)
+            except PageNotAnInteger:  # 不是数字
+                posts = paginator.page(1)
+            except EmptyPage:  # 超出页码范围
+                posts = paginator.page(paginator.num_pages)
+            contacts = posts.object_list
+            from django.core import serializers
+            son_data = serializers.serialize("python", contacts, ensure_ascii=False)
+            res = []
+            for i in son_data:
+                i = i.get("fields")
+                del i['user']
                 i['health_code'] = settings.MEDIA_URL + i['health_code']
                 i['travel_card'] = settings.MEDIA_URL + i['travel_card']
                 i['cov_report'] = settings.MEDIA_URL + i['cov_report']
-                i['start_time'] = i['start_time'].strftime('%Y-%m-%d %H:%M')
-                i['end_time'] = i['end_time'].strftime('%Y-%m-%d %H:%M')
-                if is_admin != 1:
-                    i['id_number'] = BasicsUserInfo.objects.get(pk=i['user_id']).id_number
-                del i['user_id']
-            # print(result)
-        data['data'] = result
-        data['count'] = len(result)
+                i['create_time'] = datetime.datetime.strftime(i['create_time'], '%Y-%m-%d %H:%M:%S')
+                if i['audit_time']:
+                    i['audit_time'] = datetime.datetime.strftime(i['audit_time'], '%Y-%m-%d %H:%M:%S')
+                res.append(i)
+            data['data'] = res
+            data['count'] = count
+            data['page'] = posts.number
+            data['size'] = size
+        else:
+            data['data'] = []
+            data['count'] = 0
         data['status'] = True
         return Response(data)
 
@@ -927,7 +999,7 @@ class ReEntryAndExitDeclaration(APIView):
             is_valid = False
         try:
 
-            admin_user = BasicsUserInfo.objects.get(pk=UserInfo.objects.get(openid=openid).basics_info)
+            admin_user = BasicsUserInfo.objects.get(pk=UserInfo.objects.get(openid=openid).basics_info.id)
             is_admin = admin_user.is_admin
 
             if is_admin not in (2, 4, 5):
@@ -946,15 +1018,26 @@ class ReEntryAndExitDeclaration(APIView):
         _.save()
 
         # 创建审核记录
-        AuditLog.objects.create(auditor=admin_user, audit_user=user, result=status)
+        AuditLog.objects.create(status=status, auditor=admin_user, audited_user=user)
 
         data['status'] = True
         return Response(data)
 
 
+class AddUser(APIView):
+    """
+    网格员新增人员
+    """
+
+    def post(self, request, *args, **kwargs):
+        prams = request.data
+        data = {"status": False}
+        return Response(data)
+
+
 class UploadImg(APIView):
     """
-    上传图片
+    上传图片至临时文件夹
     """
 
     def post(self, request, *args, **kwargs):
@@ -982,7 +1065,6 @@ class UploadImg(APIView):
         except Exception as e:
             print(e)
         return Response(data)
-        # return JsonResponse(data)
 
 
 class Test(APIView):

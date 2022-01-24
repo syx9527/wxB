@@ -58,6 +58,12 @@ class GetForeignWorkersSerializer(serializers.Serializer):
     size = serializers.CharField(label="每页数据量", )
     status = serializers.CharField(label="status", validators=[status_validator])
 
+class GetEntryAndExitDeclarationSerializer(serializers.Serializer):
+    openid = serializers.CharField(label="openid", )
+    page = serializers.CharField(label="页码", )
+    size = serializers.CharField(label="每页数据量", )
+    status = serializers.CharField(label="status", validators=[status_validator])
+
 
 class ReForeignWorkersSerializer(serializers.Serializer):
     openid = serializers.CharField(label="openid", )

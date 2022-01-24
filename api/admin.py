@@ -63,6 +63,25 @@ class BasicsUserInfoAdmin(admin.ModelAdmin):
     ordering = ('status',)
 
 
+class Entry2ExitDeclarationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'start_time', 'end_time', 'create_time', 'status', 'audit_time', 'is_valid',)
+    list_filter = ("user", 'status', "is_valid")
+    list_per_page = 15
+    # list_editable = ('is_valid',)
+    # date_hierarchy = 'pub_date'
+    ordering = ('-create_time',)
+    date_hierarchy = 'create_time'
+
+
+class AuditLogAdmin(admin.ModelAdmin):
+    list_display = ('auditor', 'audit_time', 'audited_user', 'status',)
+    list_filter = ("status",)
+    list_per_page = 15
+    # list_editable = ('is_valid',)
+    # date_hierarchy = 'pub_date'
+    ordering = ('-audit_time',)
+
+
 admin.site.register(UserInfo, UserInfoAdmin)
 admin.site.register(Community2LigaturesImgs)
 admin.site.register(Community2LigaturesInfo)
@@ -70,10 +89,9 @@ admin.site.register(BasicsUserInfo, BasicsUserInfoAdmin)
 admin.site.register(AdminUserInfo)
 admin.site.register(VaccinationRecord)
 admin.site.register(SupportingImgs)
-admin.site.register(Entry2ExitDeclaration)
-admin.site.register(AuditLog)
+admin.site.register(Entry2ExitDeclaration, Entry2ExitDeclarationAdmin)
+admin.site.register(AuditLog, AuditLogAdmin)
 admin.site.register(TrafficRecord)
-
 
 admin.site.register(ForeignWorkers)
 

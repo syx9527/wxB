@@ -38,9 +38,9 @@ class Community2LigaturesImgs(models.Model):
     """
     社区/哨卡图片
     """
-    img = models.ImageField(upload_to='community&ligatures/', verbose_name='图片地址')
 
     name = models.ForeignKey(verbose_name="所属社区", to="Community2LigaturesInfo", on_delete=models.CASCADE)
+    img = models.ImageField(upload_to='community&ligatures/', verbose_name='图片地址')
 
     # single = models.CharField(max_length=256, null=True, blank=True, verbose_name='图片名称', default=name.name)
 
@@ -67,8 +67,8 @@ class Community2LigaturesInfo(models.Model):
         (1, "社区"),
         (2, "哨卡"),
     )
-    id_number = models.CharField(verbose_name="编号", max_length=24, null=False, blank=False, default="", unique=True)
-    name = models.CharField(verbose_name="社区/哨卡名称", max_length=128, null=False, blank=False, default="")
+    uid = models.CharField(verbose_name="编号", max_length=24, null=False, blank=False, default="", unique=True)
+    name = models.CharField(verbose_name="社区/哨卡", max_length=128, null=False, blank=False, default="")
     category = models.IntegerField(verbose_name="类别", choices=CATEGORY, )
     address = models.CharField(verbose_name="地址", max_length=256, null=False, blank=False, default="")
     control_strategy = models.IntegerField(verbose_name="管控策略", choices=CONTROL_STRATEGY_STATUS, default=3)
@@ -97,11 +97,11 @@ class BasicsUserInfo(models.Model):
     )
 
     STATUS = (
-
         (0, "待审核"),
         (1, "审核通过"),
         (2, "审核失败"),
     )
+
     GENDER = (
         (1, "男"),
         (0, "女"),
@@ -116,7 +116,7 @@ class BasicsUserInfo(models.Model):
     email = models.EmailField(verbose_name="电子邮箱", default="", null=True, blank=True)
     status = models.IntegerField(verbose_name="审核状态", choices=STATUS, default=0)
     gender = models.IntegerField(verbose_name="性别", choices=GENDER, null=False, blank=True, default=1)
-    ownership = models.ForeignKey(to="Community2LigaturesInfo", null=False, blank=False, verbose_name="所属网格/哨卡",
+    ownership = models.ForeignKey(to="Community2LigaturesInfo", null=True, blank=False, verbose_name="所属网格/哨卡",
                                   default=None, on_delete=models.CASCADE)
 
     class Meta:
@@ -130,10 +130,13 @@ class Car(models.Model):
     """
     车辆信息
     """
-    user = models.ManyToManyField(verbose_name="车主", to=BasicsUserInfo)
+    user = models.ForeignKey(verbose_name="车主", to=BasicsUserInfo, on_delete=models.CASCADE)
     carNo = models.CharField(verbose_name="车牌", max_length=10, null=False, blank=False, unique=True)
     type = models.CharField(verbose_name="类型", max_length=10, null=False, blank=False)
     color = models.CharField(verbose_name="颜色", max_length=10, null=False, blank=False)
+
+    def __str__(self):
+        return "%s - %s" % (self.user, self.carNo)
 
 
 class UserInfo(models.Model):
@@ -235,18 +238,17 @@ class Entry2ExitDeclaration(models.Model):
         (1, "审核成功"),
     )
     UPLOAD_TO = "entry_exit/"
-    user = models.ForeignKey(verbose_name="社区居民", to="BasicsUserInfo", on_delete=models.CASCADE)
+    user = models.ForeignKey(verbose_name="社区居民-姓名", to="BasicsUserInfo", on_delete=models.CASCADE)
     subject_matte = models.CharField(verbose_name="出入事由", max_length=128, null=False, blank=False, default="")
     start_time = models.DateTimeField(verbose_name="开始时间", null=False, blank=False, default=timezone.now)
     end_time = models.DateTimeField(verbose_name="截至时间", null=False, blank=False, default=timezone.now)
-    health_code = models.ImageField(verbose_name="健康吗", null=False, blank=False, upload_to=UPLOAD_TO)
+    health_code = models.ImageField(verbose_name="健康码", null=False, blank=False, upload_to=UPLOAD_TO)
     travel_card = models.ImageField(verbose_name="行程卡", null=False, blank=False, upload_to=UPLOAD_TO)
     cov_report = models.ImageField(verbose_name="核酸检测报告", null=False, blank=False, upload_to=UPLOAD_TO)
     status = models.IntegerField(verbose_name="审核状态", choices=STATUS, default=0)
     is_valid = models.BooleanField(verbose_name="是否处于有效期", default=True, null=False, blank=False)
     create_time = models.DateTimeField(verbose_name="申报时间", auto_now_add=True)
     audit_time = models.DateTimeField(verbose_name="审核时间", null=True, blank=False, default=None)
-
 
     def __str__(self):
         return self.user.name
@@ -264,13 +266,27 @@ class AuditLog(models.Model):
         (1, "审核通过"),
         (-1, "审核失败"),
     )
-    auditor = models.ForeignKey(verbose_name='审核员', to="AdminUserInfo", on_delete=models.DO_NOTHING)
-    audit_time = models.DateTimeField(verbose_name="审核时间", null=False, blank=False, auto_now=True)
-    audit_user = models.ForeignKey(verbose_name='居民', to="BasicsUserInfo", on_delete=models.DO_NOTHING, null=True)
-    result = models.IntegerField(verbose_name="审核结果", choices=STATUS, default=1)
-
-    def __str__(self):
-        return self.auditor.user_info.name
+    auditor = models.ForeignKey(
+        to="BasicsUserInfo",
+        verbose_name='审核员',
+        related_name="admin",
+        on_delete=models.CASCADE
+    )
+    audit_time = models.DateTimeField(
+        verbose_name="审核时间",
+        null=False,
+        blank=False,
+        auto_now_add=True)
+    audited_user = models.ForeignKey(
+        to="BasicsUserInfo",
+        verbose_name='社区居民',
+        related_name="person",
+        on_delete=models.CASCADE
+    )
+    status = models.IntegerField(
+        verbose_name="审核结果",
+        choices=STATUS,
+        default=1)
 
     class Meta:
         verbose_name = verbose_name_plural = "人员审核记录表"

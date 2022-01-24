@@ -40,7 +40,7 @@ def email_validator(value):
 
 
 def status_validator(value):
-    if not re.match(r"^(3|2|1|0)$", value):
+    if not re.match(r"^(3|-1|1|0)$", value):
         raise ValidationError("状态码错误")
 
 
