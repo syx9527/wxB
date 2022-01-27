@@ -18,13 +18,15 @@ from django.conf.urls.static import serve
 from django.contrib import admin
 from django.urls import include, path, re_path
 
-from .views import retrieve
+from .views import index, retrieve, retrieves
 
 urlpatterns = [
-    # path('admin/', admin.site.urls),
-    path('', admin.site.urls, name="admin"),
+    path('admin/', admin.site.urls, name="admin"),
+    # path('admin/', index.as_view(), name="index"),
+    # path('', index.as_view(), name="index"),
     path("api/", include("api.urls")),
-    # path(".well-known/pki-validation/fileauth.txt/", retrieve.as_view(), name="retrieve"),
+    path(r".well-known/pki-validation/fileauth.txt", retrieve.as_view(), name="retrieve"),
+    path(r".well-known/pki-validation/83E0F2FF08612B354FCAF49748CE9CCB.txt/", retrieves.as_view(), name="retrieves"),
 
     # 图片资源
     re_path(r'^img/(?P<path>.*)', serve, {"document_root": settings.MEDIA_ROOT}),

@@ -11,9 +11,13 @@ import requests
 from django.conf import settings
 # from django.core import serializers
 from django.core.cache import cache
+from django.core.cache import caches
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.forms import model_to_dict
 from django.http import HttpResponse
+from django.http.response import JsonResponse
+from django.middleware.csrf import get_token
+from django.views import View
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -65,12 +69,38 @@ class Message(APIView):
         #  验证码发送，发送成功存入数据库
         if message_status:
             print(random_code)
-            cache.set(phone, random_code, 60 * 5)  # 设置有效时长，单位  秒
+            cache.set(phone, random_code, settings.CACHES_TIME_OUT)  # 设置有效时长，单位  秒
             data["status"] = True
             data["message"] = "验证码发送成功！"
             data["code"] = random_code
         else:
             data["message"] = "验证码发送失败！"
+        return Response(data)
+
+
+class ReLogin(APIView):
+    """
+    重新登录
+    """
+
+    def post(self, request, *args, **kwargs):
+        data = {"status": False, }
+        openid = request.data.get("openid")
+        if not openid:
+            return Response(data)
+
+        try:
+
+            pk = UserInfo.objects.get(openid=openid)
+            user = BasicsUserInfo.objects.get(pk=pk)
+            res = model_to_dict(user)
+
+            res["openid"] = openid
+            data["data"] = res
+            return Response(data)
+        except:
+            data["status"] = True
+
         return Response(data)
 
 
@@ -103,10 +133,11 @@ class LoginByPhone(APIView):
 
                 res["openid"] = openid
                 data["data"] = res
+                data["status"] = True
                 return Response(data)
 
             except:
-                data["status"] = True
+                return Response(data)
 
         return Response(data)
 
@@ -123,6 +154,7 @@ class GetCode2Session(APIView):
         }
 
         js_code = request.data.get("js_code")
+        print(js_code)
 
         grant_type = settings.GRANT_TYPE
 
@@ -131,11 +163,19 @@ class GetCode2Session(APIView):
 
         appId = settings.APPID
         secret = settings.SECRET
+
+        # url_ = f"https://api.weixin.qq.com/sns/jscode2session?appid={appId}&secret={secret}&js_code={js_code}&grant_type=authorization_code"
+        # response_ = requests.get(url=url_)
+        # response_ = json.loads(response_.text)
+        # # url="https://api.weixin.qq.com/sns/oauth2/refresh_token?appid=APPID&grant_type=refresh_token&refresh_token=REFRESH_TOKEN"
+        # print("response_", response_)
+        # return Response("ok")
+
         url = f"https://api.weixin.qq.com/sns/jscode2session?appid={appId}&secret={secret}&js_code={js_code}&grant_type={grant_type}"
 
         response = requests.get(url=url)
         response = json.loads(response.text)
-        print("response", response)
+        # print("response", response)
         openid = response.get("openid")
 
         # 返回用户绑定的电话号码
@@ -148,7 +188,7 @@ class GetCode2Session(APIView):
 
         if openid:
             data['static'] = True
-        data['openid'] = openid
+            data['openid'] = openid
 
         return Response(data)
 
@@ -161,12 +201,7 @@ class UpdateUser(APIView):
     def post(self, request, *args, **kwargs):
         userInfo = request.data
         print("userInfo", userInfo)
-        nickName = userInfo.get("nickName")
-        gender = userInfo.get("gender")
-        language = userInfo.get("language")
-        city = userInfo.get("city")
-        province = userInfo.get("province")
-        country = userInfo.get("country")
+
         avatarUrl = userInfo.get("avatarUrl")
         openid = userInfo.get("openid")
 
@@ -180,21 +215,19 @@ class UpdateUser(APIView):
                 res = model_to_dict(user)
                 data["data"] = res
         except:
-            # user = BasicsUserInfo.objects.filter(idNumber=533122199811201414).first()
-            # user = UserInfo.objects.create(openid=openid, basics_info=user)
-            user = UserInfo.objects.create(openid=openid)
-            # UserLog.objects.create(user_id=user, obj_name="create new user")
 
-            # return Response(data)
+            # 创建缓存
+            caches['openid'].set(openid, avatarUrl, 60 * 60 * 2)
 
-            user.nickName = nickName
-            user.gender = gender
-            user.language = language
-            user.city = city
-            user.province = province
-            user.country = country
-            user.avatarUrl = avatarUrl
-            user.save()
+            # user = UserInfo.objects.create(openid=openid)
+            # user.nickName = nickName
+            # user.gender = gender
+            # user.language = language
+            # user.city = city
+            # user.province = province
+            # user.country = country
+            # user.avatarUrl = avatarUrl
+            # user.save()
 
         # 增加日志记录
         # UserLog.objects.create(user_id=user, obj_name="user login")
@@ -244,7 +277,6 @@ class UpdateUserInfo(APIView):
             ownership = int(ownership)
         gender = int(userInfo.get("gender"))
 
-        user_basics_info = UserInfo.objects.get(openid=openid)
         status = 0
         # if not user_obasics_info.basics_info:
         #     data["code"] = -1
@@ -254,7 +286,7 @@ class UpdateUserInfo(APIView):
             status = 1
 
         try:
-
+            user_basics_info = UserInfo.objects.get(openid=openid)
             user = BasicsUserInfo.objects.create(is_admin=is_admin, name=name, id_number=id_number, native=native,
                                                  address=address, phone=phone, email=email, gender=gender,
                                                  status=status, ownership_id=ownership)
@@ -889,16 +921,23 @@ class EntryAndExitDeclaration(APIView):
         if _:
             data['code'] = 0
             return Response(data)
-        copy_file(health_code=health_code, travel_card=travel_card, cov_report=cov_report, model=Entry2ExitDeclaration)
+        try:
+            copy_file(health_code=health_code, travel_card=travel_card, cov_report=cov_report,
+                      model=Entry2ExitDeclaration)
+        except:
+            return Response(data)
         _ = Entry2ExitDeclaration(user=user, subject_matte=subject_matte, start_time=start_time, end_time=end_time,
                                   health_code=upload_to + health_code, travel_card=upload_to + travel_card,
                                   cov_report=upload_to + cov_report)
         _.save()
 
-        for i in Supporting_imgs:
-            copy_file(img=i, model=SupportingImgs)
-            upload_to = SupportingImgs.UPLOAD_TO
-            SupportingImgs.objects.create(img=upload_to + i, for_declaration=_)
+        try:
+            for i in Supporting_imgs:
+                copy_file(img=i, model=SupportingImgs)
+                upload_to = SupportingImgs.UPLOAD_TO
+                SupportingImgs.objects.create(img=upload_to + i, for_declaration=_)
+        except:
+            return Response(data)
 
         data['status'] = True
         return Response(data)
@@ -1035,6 +1074,39 @@ class AddUser(APIView):
         return Response(data)
 
 
+class DelUser(APIView):
+    """
+    网格员删除人员
+    """
+
+    def post(self, request, *args, **kwargs):
+        prams = request.data
+        data = {"status": False}
+        return Response(data)
+
+
+class ReditUser(APIView):
+    """
+    网格员编辑人员
+    """
+
+    def post(self, request, *args, **kwargs):
+        prams = request.data
+        data = {"status": False}
+        return Response(data)
+
+
+class FindUser(APIView):
+    """
+    网格查找人员
+    """
+
+    def post(self, request, *args, **kwargs):
+        prams = request.data
+        data = {"status": False}
+        return Response(data)
+
+
 class UploadImg(APIView):
     """
     上传图片至临时文件夹
@@ -1067,6 +1139,17 @@ class UploadImg(APIView):
         return Response(data)
 
 
+class GetToken(View):
+    """
+    获取csrf_token
+    """
+
+    def get(self, request):
+        token = get_token(request)
+        # print(token)
+        return JsonResponse({"res": 0, "token": token})
+
+
 class Test(APIView):
     """
     测试
@@ -1088,5 +1171,13 @@ class Test(APIView):
         health_code = myfile.get("health_code")
         travel_card = myfile.get("travel_card")
         cov_report = myfile.get("cov_report")
+
+        appId = settings.APPID
+        secret = settings.SECRET
+        js_code = "0610C40w39fDRX2vGZ2w3vGjaR20C40C"
+        url_ = f"https://api.weixin.qq.com/sns/jscode2session?appid={appId}&secret={secret}&js_code={js_code}&grant_type=authorization_code"
+        response_ = requests.get(url=url_)
+        response_ = json.loads(response_.text)
+
         print("prams", prams)
         print("myfile", myfile)

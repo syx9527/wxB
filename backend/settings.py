@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-#h6ayt-y3=hhk75^-5%3ccn2_w!#9zot1ig9$ftuo5$i*ms7&x
 # DEBUG = False
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = []
 
 # Application definition
 
@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     "rest_framework",
 
     "api.apps.ApiConfig",
+    'werkzeug_debugger_runserver',
+    'django_extensions',
 
 ]
 
@@ -49,7 +51,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    # 'django.middleware.csrf.CsrfViewMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -147,7 +149,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        'LOCATION': 'redis://127.0.0.1:6379/4',
+        'LOCATION': 'redis://127.0.0.1:6379/0',
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "CONNECTION_POOL_KWARGS": {
@@ -155,10 +157,10 @@ CACHES = {
             },
         },
     },
-    # token
-    "token": {
+    # openid
+    "openid": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/5",
+        "LOCATION": "redis://127.0.0.1:6379/1",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
@@ -172,6 +174,7 @@ CACHES = {
         }
     },
 }
+CACHES_TIME_OUT = 60 * 60 * 24 * 10
 
 # 图片访问目录
 # 图片访问目录
@@ -210,4 +213,12 @@ SIMPLEUI_CONFIG = {
 
 # SIMPLEUI_LOGO = '/img/static/img/banner2.png'
 
-
+# SECURITY安全设置 - 支持http时建议开启
+# SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# SECURE_SSL_REDIRECT = True  # 将所有非SSL请求永久重定向到SSL
+# SESSION_COOKIE_SECURE = True  # 仅通过https传输cookie
+# CSRF_COOKIE_SECURE = True  # 仅通过https传输cookie
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = True  # 严格要求使用https协议传输
+# SECURE_HSTS_PRELOAD = True  # HSTS为
+# SECURE_HSTS_SECONDS = 60
+# SECURE_CONTENT_TYPE_NOSNIFF = True  # 防止浏览器猜测资产的内容类型

@@ -27,7 +27,8 @@ urlpatterns = [
 
     path("user_exit/", UserExit.as_view(), name="user_exit"),
 
-    path('token', TokenAPIView.as_view()),
+    path('token/', TokenAPIView.as_view()),
+    path('get_token/', GetToken.as_view()),
     path('uploading', UploadingImageAPIView.as_view()),
 
     path("test/", Test.as_view(), name="test"),

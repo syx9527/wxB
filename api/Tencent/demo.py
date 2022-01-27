@@ -13,8 +13,9 @@ def main():
 
     appId = 'wxafe035d3c21ea4ef'
     sessionKey = "/sRzMjOrYxDaZUXaC89KdQ=="
-    encryptedData = "HK4mvJ85GgNh4u/wAhmTOPSTtqU692rc0WUrNa4yw5k7Th1geVkHRlQGU/Rh4QKaxYdzwCxTKSq4tPuHB7OjALmPU50fSVGW4YMRlNl79oo1N2VWQ1CPfOw9zPJBN6Mt+naFgpsVEk8IKqVTvkkpZSmurwerULrmM3PJF4rJqAMK0OAm9bcIrTAzUPY6CAXmDGxuZsaHFyg7cHO1JjbsUiAM06ZEuz89vR1A25MprjAAeYGzxUVxeGeO4ZHEJVUwbUWFWgEGwQGbNM4wiLSG2He32NmlJWsNDPdFd+UPIBFU/9ZrcniLtbWPj+0n1Z+L+bGwySSPWkUwnu1iB+Xop70oyd4Dseb4AN23u4VPLsPxTDqciq9a6hUoEbFKyNjXbDeZlXOLavvatzYN6CoNqw=="
-    iv = "/QZiPfM+/m5qBeAihqezhw=="
+    # sessionKey = "nEBHeV8dnFuS2vuhhVO+cA=="
+    encryptedData = "YxoJsz9MYHoFV+ktjBtpzLRWSztdoxbzaKR2rnsdyz0AZKIKf7lxx9BCz1ufGp+wqaXgWQGbBUBll+ChIi/OAOsoXOhwz7SoA8SlE2TNvt3DyG76I1v7wuPXwOewl8UUZAf6LjmRn2+5ODGp+9XXjYyNbEs14xlTrrfzVNL6hfXkyUz9aerXPR5N8lNQzdwrcVeJcF43Tc/MSztpvqQSLw9lZnqp9/5lqJRZkLywQ4nDy6dTdfiqBC3a+3It4gJmiNznaZjuZLmoEaawQhkEpm+b3wGeaclMkiwd27UqCFVaslst+fZLL+gHSEJjC6VbYs44j5++Tx/jBpcgO67ZLvTRBTq53CLkARKJZsJ9yCXVCvcjSDBojjAPu+NAd0yWe1kXFnTzubNsN9q2ErNYL+RARHRyWp6i0GhzrR7tRxk="
+    iv = "9w+7LZXq3l0/QcQtGYYwnQ=="
 
     pc = WXBizDataCrypt(appId, sessionKey)
 

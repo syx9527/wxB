@@ -111,7 +111,7 @@ class BasicsUserInfo(models.Model):
     id_number = models.CharField(verbose_name="身份证号码", max_length=18, null=False, blank=True, default="", unique=True)
     native = models.CharField(verbose_name="籍贯", max_length=128, null=False, blank=True, default="")
     address = models.TextField(verbose_name="家庭住址", null=False, blank=True, default="")
-    phone = models.CharField(verbose_name="手机号码", max_length=11, default="", null=True, blank=True, unique=True)
+    phone = models.CharField(verbose_name="手机号码", max_length=11, default="", null=False, blank=True, unique=True)
     email = models.EmailField(verbose_name="电子邮箱", default="", null=True, blank=True)
     status = models.IntegerField(verbose_name="审核状态", choices=STATUS, default=0)
     gender = models.IntegerField(verbose_name="性别", choices=GENDER, null=False, blank=True, default=1)
@@ -159,8 +159,7 @@ class UserInfo(models.Model):
     createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True, )
     lastTime = models.DateTimeField(verbose_name="最后登录时间", auto_now=True, )
     is_valid = models.BooleanField(verbose_name="是否有效(没被注销)", default=True)
-    basics_info = models.OneToOneField(verbose_name="对应用户", to="BasicsUserInfo", blank=True, on_delete=models.SET_NULL,
-                                       null=True)
+    basics_info = models.ForeignKey(verbose_name="对应用户", to="BasicsUserInfo", blank=False, on_delete=models.CASCADE)
 
     class Meta:
         verbose_name = verbose_name_plural = "微信用户基本信息"
