@@ -23,10 +23,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-#h6ayt-y3=hhk75^-5%3ccn2_w!#9zot1ig9$ftuo5$i*ms7&x'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = False
-DEBUG = True
+DEBUG = False
+# DEBUG = True
 
-ALLOWED_HOSTS = ["bhynrzjs.mynatapp.cc", '127.0.0.1', "172.18.40.147", "*"]
+ALLOWED_HOSTS = ["bhynrzjs.mynatapp.cc", '127.0.0.1']
 
 # Application definition
 
