@@ -2,7 +2,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
-path = r"C:\Users\SYX\Pictures\未标题-1.png"
+path = r"C:\Users\SYX\Pictures\5.png"
 
 img = np.array(Image.open(path).convert('L'))
 

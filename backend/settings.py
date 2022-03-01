@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-#h6ayt-y3=hhk75^-5%3ccn2_w!#9zot1ig9$ftuo5$i*ms7&x
 # DEBUG = False
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["bhynrzjs.mynatapp.cc", '127.0.0.1', "172.18.40.147", "*"]
 
 # Application definition
 
@@ -157,24 +157,42 @@ CACHES = {
             },
         },
     },
-    # openid
-    "openid": {
+    # new_wx
+    "new_wx": {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": "redis://127.0.0.1:6379/1",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
     },
-    # session状态保持
-    "session": {
+
+    "user_info": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/6",
+        "LOCATION": "redis://127.0.0.1:6379/2",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
     },
+
+    "base_user": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/3",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    },
+    "new_to_old": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/4",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    },
+
 }
-CACHES_TIME_OUT = 60 * 60 * 24 * 10
+
+# 设置验证码缓存时效
+CACHES_TIME_OUT = 60 * 5
 
 # 图片访问目录
 # 图片访问目录
@@ -204,6 +222,21 @@ GRANT_TYPE = "authorization_code"
 APPID = "wx9169ab3b0af56871"
 SECRET = "a6bc811b381bd82a1fefff3cc83761bc"
 
+# 腾讯云短信
+
+# 以下配置信息已全部隐藏个人信息内容
+SMS_SECRET_ID = "FSDKNf***********************sDKfSX"  # API秘钥管理SecretId
+SMS_SECRET_KEY = "fvszl************************zpislf"  # API秘钥管理SecretKey
+SMS_APPID = '1400594329'  # 应用列表SDK AppID
+SMS_SIGN = '耿马出入审批'  # 签名管理的内容
+
+# 正文模板管理ID
+SMS_TEMPLATE_ID = {
+    'login': '123456',  # 登录模板ID
+    'register': '123456',  # 注册模板ID
+    're_password': '123456',  # 改密模板ID
+}
+
 SIMPLEUI_HOME_INFO = False
 SIMPLEUI_ANALYSIS = False
 
@@ -222,3 +255,44 @@ SIMPLEUI_CONFIG = {
 # SECURE_HSTS_PRELOAD = True  # HSTS为
 # SECURE_HSTS_SECONDS = 60
 # SECURE_CONTENT_TYPE_NOSNIFF = True  # 防止浏览器猜测资产的内容类型
+
+
+#                                _ooOoo_
+#                               o8888888o
+#                               88" . "88
+#                               (| -_- |)
+#                               O\  =  /O
+#                            ____/`---'\____
+#                          .'  \\|     |//  `.
+#                         /  \\|||  :  |||//  \
+#                        /  _||||| -:- |||||-  \
+#                        |   | \\\  -  /// |   |
+#                        | \_|  ''\---/''  |   |
+#                        \  .-\__  `-`  ___/-. /
+#                      ___`. .'  /--.--\  `. . __
+#                   ."" '<  `.___\_<|>_/___.'  >'"".
+#                  | | :  `- \`.;`\ _ /`;.`/ - ` : | |
+#                  \  \ `-.   \_ __\ /__ _/   .-` /  /
+#             ======`-.____`-.___\_____/___.-`____.-'======
+#                                `=---='
+#          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#                         佛祖保佑       永无BUG
+
+#                                  .::::.
+#                                .::::::::.
+#                               :::::::::::
+#                            ..:::::::::::'
+#                         '::::::::::::'
+#                           .::::::::::
+#                      '::::::::::::::..
+#                           ..::::::::::::.
+#                         ``::::::::::::::::
+#                          ::::``:::::::::'        .:::.
+#                         ::::'   ':::::'       .::::::::.
+#                       .::::'      ::::     .:::::::'::::.
+#                      .:::'       :::::  .:::::::::' ':::::.
+#                     .::'        :::::.:::::::::'      ':::::.
+#                    .::'         ::::::::::::::'         ``::::.
+#                ...:::           ::::::::::::'              ``::.
+#               ```` ':.          ':::::::::'                  ::::..
+#                                  '.:::::'                    ':'````..

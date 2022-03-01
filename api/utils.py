@@ -136,13 +136,18 @@ def upload_image(file, upload_to):
 
 
 def copy_file(model, *args, **kwargs):
-    for k, v in kwargs.items():
-        _ = ImgUpload.objects.get(img=ImgUpload.UPLOAD_TO + v)
-        _.is_valid = False
-        _.save()
-        f_path = os.path.join(settings.MEDIA_ROOT, ImgUpload.UPLOAD_TO, v)
-        to_path = os.path.join(settings.MEDIA_ROOT, model.UPLOAD_TO, v)
-        dj_move.file_move_safe(f_path, to_path)
+    try:
+        for k, v in kwargs.items():
+            _ = ImgUpload.objects.get(img=ImgUpload.UPLOAD_TO + v)
+            _.is_valid = False
+            _.save()
+            f_path = os.path.join(settings.MEDIA_ROOT, ImgUpload.UPLOAD_TO, v)
+            to_path = os.path.join(settings.MEDIA_ROOT, model.UPLOAD_TO, v)
+            dj_move.file_move_safe(f_path, to_path)
+        return True
+    except Exception as e:
+        print(e)
+        return False
 
 
 def utc_to_local(utc):

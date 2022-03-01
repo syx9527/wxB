@@ -23,7 +23,7 @@ from .views import index, retrieve, retrieves
 urlpatterns = [
     path('admin/', admin.site.urls, name="admin"),
     # path('admin/', index.as_view(), name="index"),
-    # path('', index.as_view(), name="index"),
+    re_path(r'^$', index.as_view(), name="index"),
     path("api/", include("api.urls")),
     path(r".well-known/pki-validation/fileauth.txt", retrieve.as_view(), name="retrieve"),
     path(r".well-known/pki-validation/83E0F2FF08612B354FCAF49748CE9CCB.txt/", retrieves.as_view(), name="retrieves"),
