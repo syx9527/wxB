@@ -85,7 +85,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': "wechartdev",
-        "PASSWORD": "123456",
+        "PASSWORD": "bhyn123456",
         "USER": "root",
         "HOST": "127.0.0.1",
     }
