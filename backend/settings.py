@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-#h6ayt-y3=hhk75^-5%3ccn2_w!#9zot1ig9$ftuo5$i*ms7&x
 DEBUG = False
 # DEBUG = True
 
-ALLOWED_HOSTS = ["bhynrzjs.mynatapp.cc", '127.0.0.1']
+ALLOWED_HOSTS = ["bhynrzjs.mynatapp.cc", '127.0.0.1', "172.18.40.147", "*"]
 
 # Application definition
 
@@ -81,6 +81,16 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': "wechartdev",
+#         "PASSWORD": "bhyn123456",
+#         "USER": "root",
+#         "HOST": "127.0.0.1",
+#     }
+# }
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -91,16 +101,7 @@ DATABASES = {
     }
 }
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': "wechartdev",
-#         "PASSWORD": "syx.9527",
-#         "USER": "root",
-#         "HOST": "sh-cynosdbmysql-grp-1oxe84mu.sql.tencentcdb.com",
-#         "PORT": "22739"
-#     }
-# }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
