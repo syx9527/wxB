@@ -17,7 +17,7 @@ def send_massages(phone, code):
         # 您也可以直接在代码中写入密钥对，但需谨防泄露，不要将代码复制、上传或者分享给他人
         # CAM 密钥查询：https://console.cloud.tencent.com/cam/capi
 
-        cred = credential.Credential("AKIDfAPN4VfcJo31i8H9k59wShgOpzsUqvjH", "IJ3XkgLjqgFWWFhsnRoupTqwlKcdNSGn")
+        cred = credential.Credential("AKIDLWR6WhbE4h39xWopa9STDhupTqyoNeeN", "UBhwub1A2dy2pLaYFfpiKfjV1GDtIQHr")
         # cred = credential.Credential(
         #     os.environ.get(""),
         #     os.environ.get("")
@@ -47,23 +47,46 @@ def send_massages(phone, code):
         # 帮助链接：
         # 短信控制台：https://console.cloud.tencent.com/smsv2
         # sms helper：https://cloud.tencent.com/document/product/382/3773
+
+        # # 短信应用 ID: 在 [短信控制台] 添加应用后生成的实际 SDKAppID，例如1400006666
+        # req.SmsSdkAppid = "1400594329"
+        # # 短信签名内容: 使用 UTF-8 编码，必须填写已审核通过的签名，可登录 [短信控制台] 查看签名信息
+        # req.Sign = "耿马出入审批"
+        # # 短信码号扩展号: 默认未开通，如需开通请联系 [sms helper]
+        # req.ExtendCode = ""
+        # # 用户的 session 内容: 可以携带用户侧签名 ID 等上下文信息，server 会原样返回
+        # req.SessionContext = "442351"
+        # # 国际/港澳台短信 senderid: 国内短信填空，默认未开通，如需开通请联系 [sms helper]
+        # req.SenderId = ""
+        # # 下发手机号码，采用 e.164 标准，+[国家或地区码][手机号]
+        # # 例如+8613711112222， 其中前面有一个+号 ，86为国家码，13711112222为手机号，最多不要超过200个手机号
+        # req.PhoneNumberSet = [f"+86{phone}"]
+        #
+        # # 模板 ID: 必须填写已审核通过的模板 ID，可登录 [短信控制台] 查看模板 ID
+        # # req.TemplateID = "1317114"
+        # req.TemplateID = "1317114"
+        # q
+
         # 短信应用 ID: 在 [短信控制台] 添加应用后生成的实际 SDKAppID，例如1400006666
-        req.SmsSdkAppid = "1400594329"
+        req.SmsSdkAppid = "1400646479"
         # 短信签名内容: 使用 UTF-8 编码，必须填写已审核通过的签名，可登录 [短信控制台] 查看签名信息
-        req.Sign = "耿马出入审批"
+        req.Sign = "耿马出入审批小程序"
         # 短信码号扩展号: 默认未开通，如需开通请联系 [sms helper]
         req.ExtendCode = ""
         # 用户的 session 内容: 可以携带用户侧签名 ID 等上下文信息，server 会原样返回
-        req.SessionContext = "442351"
+        req.SessionContext = "445866"
         # 国际/港澳台短信 senderid: 国内短信填空，默认未开通，如需开通请联系 [sms helper]
         req.SenderId = ""
         # 下发手机号码，采用 e.164 标准，+[国家或地区码][手机号]
         # 例如+8613711112222， 其中前面有一个+号 ，86为国家码，13711112222为手机号，最多不要超过200个手机号
-        req.PhoneNumberSet = [f"+86{phone}"]
+        req.PhoneNumberSet = [f"+86{phone}", ]
+
         # 模板 ID: 必须填写已审核通过的模板 ID，可登录 [短信控制台] 查看模板 ID
-        req.TemplateID = "1317114"
+        # req.TemplateID = "1317114"
+        req.TemplateID = "1332744"
+
         # 模板参数: 若无模板参数，则设置为空
-        req.TemplateParamSet = [f"{code}"]
+        req.TemplateParamSet = [f"{code}", "5"]
         # 通过 client 对象调用 SendSms 方法发起请求。注意请求方法名与请求对象是对应的
         resp = client.SendSms(req)
         # print(resp)
@@ -124,3 +147,4 @@ def send_massages(phone, code):
 }
 
 """
+# send_massages("17606927841", "3501")
